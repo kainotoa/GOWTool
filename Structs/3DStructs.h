@@ -1,3 +1,4 @@
+#pragma once
 #include <cstdint>
 #include <math.h>
 
@@ -71,3 +72,23 @@ struct Quat
 			return ((float)sqrt(1.0 - d));
 	}
 };
+inline Vec4 TenBitShifted(uint32_t U32)
+{
+	int16_t X = (int16_t)(U32 & 1023);
+	int16_t Y = (int16_t)((U32 >> 10) & 1023);
+	int16_t Z = (int16_t)((U32 >> 20) & 1023);
+	int16_t W = (int16_t)((U32) >> 30);
+
+	Vec4 v(((float)(X - 511) / (float)512), ((float)(Y - 511) / (float)512), ((float)(Z - 511) / (float)512), (float)W / (float)3);
+	return v;
+}
+inline Vec4 TenBitUnsigned(uint32_t U32)
+{
+	int16_t X = (int16_t)(U32 & 1023);
+	int16_t Y = (int16_t)((U32 >> 10) & 1023);
+	int16_t Z = (int16_t)((U32 >> 20) & 1023);
+	int16_t W = (int16_t)((U32) >> 30);
+
+	Vec4 v(((float)X / (float)1023), ((float)Y / (float)1023), ((float)Z / (float)1023), (float)W / (float)3);
+	return v;
+}

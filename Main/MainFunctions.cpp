@@ -300,7 +300,7 @@ inline RawMesh containRawMesh(MeshInfo meshinfo, std::string filename, uint32_t 
     // doing tangents
     uint32_t TanRead32;
 
-    int TanStride = 0;
+    uint32_t TanStride = 0;
     if (meshinfo.tanDetectCounter <= (meshinfo.compC - meshinfo.buffC))
     {
         TanStride = meshinfo.Stride;
@@ -322,6 +322,90 @@ inline RawMesh containRawMesh(MeshInfo meshinfo, std::string filename, uint32_t 
     }
     // done tangents
 
+    // doing bones index
+    uint32_t BoneStride = 0;
+    if (meshinfo.jointDetectCounter <= (meshinfo.compC - meshinfo.buffC))
+    {
+        BoneStride = meshinfo.Stride;
+    }
+    else
+    {
+        BoneStride = meshinfo.jointSize;
+    }
+    for (int i = 0; i < meshinfo.vertCount; i++)
+    {
+        file.seekg((uint64_t)meshinfo.jointOffset + (uint64_t)BoneStride * i + off);
+
+        if (meshinfo.vertOffset != meshinfo.jointOffset)
+        {
+            if (meshinfo.jointSize / 4 == 2)
+            {
+                uint16_t x, y, z, w;
+                file.read((char*)&x, sizeof(uint16_t));
+                file.read((char*)&y, sizeof(uint16_t));
+                file.read((char*)&z, sizeof(uint16_t));
+                file.read((char*)&w, sizeof(uint16_t));
+                Mesh.joints[i][0] = x;
+                Mesh.joints[i][1] = y;
+                Mesh.joints[i][2] = z;
+                Mesh.joints[i][3] = w;
+            }
+            else
+            {
+                uint8_t x, y, z, w;
+                file.read((char*)&x, sizeof(uint8_t));
+                file.read((char*)&y, sizeof(uint8_t));
+                file.read((char*)&z, sizeof(uint8_t));
+                file.read((char*)&w, sizeof(uint8_t));
+                Mesh.joints[i][0] = (uint16_t)x;
+                Mesh.joints[i][1] = (uint16_t)y;
+                Mesh.joints[i][2] = (uint16_t)z;
+                Mesh.joints[i][3] = (uint16_t)w;
+            }
+        }
+        else
+        {
+            Mesh.joints[i][0] = meshinfo.boneAssociated;
+            Mesh.joints[i][1] = 0;
+            Mesh.joints[i][2] = 0;
+            Mesh.joints[i][3] = 0;
+        }
+    }
+    // done bone index
+    // doing weights
+    uint32_t wgtRead = 0;
+    uint32_t wgtStride = 0;
+    if (meshinfo.weightDetectCounter <= (meshinfo.compC - meshinfo.buffC))
+    {
+        wgtStride = meshinfo.Stride;
+    }
+    else
+    {
+        wgtStride = 4;
+    }
+    for (uint32_t i = 0; i < meshinfo.vertCount; i++)
+    {
+        if (meshinfo.vertOffset != meshinfo.weightOffset)
+        {
+            file.seekg((uint64_t)meshinfo.weightOffset + (uint64_t)wgtStride * i + off);
+            file.read((char*)&wgtRead, sizeof(uint32_t));
+
+            Vec4 vec = TenBitUnsigned(wgtRead);
+
+            Mesh.weights[i][0] = vec.X;
+            Mesh.weights[i][1] = vec.Y;
+            Mesh.weights[i][2] = vec.Z;
+            Mesh.weights[i][3] = vec.W * 3 /(float)1023;
+        }
+        else
+        {
+            Mesh.weights[i][0] = 1;
+            Mesh.weights[i][1] = 0;
+            Mesh.weights[i][2] = 0;
+            Mesh.weights[i][3] = 0;
+        }
+    }
+    // done weights
     return Mesh;
 }
 inline void RawToObj(std::vector<RawMesh> expMeshes)

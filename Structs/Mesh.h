@@ -12,6 +12,8 @@ struct RawMesh
 	Vec2* txcoord2;
 	Vec2* txcoord3;
 	uint16_t* indices;
+	uint16_t** joints;
+	float** weights;
 	RawMesh(uint32_t vertCount, uint32_t indCount)
 	{
 		VertCount = vertCount;
@@ -24,6 +26,13 @@ struct RawMesh
 		txcoord2 = new Vec2[VertCount];
 		txcoord3 = new Vec2[VertCount];
 		indices = new uint16_t[IndCount];
+
+		joints = new uint16_t* [VertCount];
+		for (int i = 0; i < VertCount; i++)
+			joints[i] = new uint16_t[4];
+		weights = new float* [VertCount];
+		for (int i = 0; i < VertCount; i++)
+			weights[i] = new float[4];
 	}
 };
 enum ComponentTypes

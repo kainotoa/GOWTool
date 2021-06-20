@@ -1,10 +1,8 @@
-#include <Formats.cpp>
-#include <3Dstructs.h>
-#include <Mesh.h>
-#include <fstream>
-#include <iostream>
-#include <string>
-#include <vector>
+#include <pch.h>
+
+#include "../inc/3Dstructs.h"
+#include "../inc/Mesh.h"
+#include "../inc/Formats.h"
 
 inline uint16_t Switcher(std::vector<MeshComp> meshcomp, uint16_t common, uint16_t looper)
 {

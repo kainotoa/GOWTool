@@ -1,11 +1,9 @@
 #pragma once
-#include <cstdint>
-#include <math.h>
 
 struct Vec3
 {
-	float X, Y, Z;
-	Vec3(void) { X = 0, Y = 0, Z =  0; }
+	float X { 0 }, Y { 0 }, Z { 0 };
+	Vec3() = default;
 	Vec3(const float x, const float y, const float z)
 	{
 		X = x, Y = y, Z = z;
@@ -23,8 +21,8 @@ struct Vec3
 };
 struct Vec2
 {
-	float X, Y;
-	Vec2(void) { X = 0, Y = 0; }
+	float X { 0 }, Y { 0 };
+	Vec2() = default;
 	Vec2(const float x, const float y)
 	{
 		X = x, Y = y;
@@ -32,8 +30,8 @@ struct Vec2
 };
 struct Vec4
 {
-	float X, Y, Z, W;
-	Vec4(void) { X = 0, Y = 0, Z = 0, W = 0; }
+	float X { 0 }, Y { 0 }, Z { 0 }, W { 0 };
+	Vec4() = default;
 	Vec4(const float x, const float y, const float z, const float w)
 	{
 		X = x, Y = y, Z = z, W = w;
@@ -56,8 +54,8 @@ struct Vec4
 // hence w = cos(theta/2) and X.i + Y.j + Z.k = sin(theta/2)*(x.i + y.j + z.k)
 struct Quat 
 {
-	float X, Y, Z, W;
-	Quat(void) { X = 0, Y = 0, Z = 0, W = 0; }
+	float X { 0 }, Y { 0 }, Z { 0 }, W { 1 };
+	Quat() = default;
 	Quat(const float x, const float y, const float z, const float w)
 	{
 		X = x, Y = y, Z = z, W = w;

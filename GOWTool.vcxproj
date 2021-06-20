@@ -129,13 +129,14 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>.\inc;.\src;.;;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\inc;.\src;.;</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -171,6 +172,7 @@
   <ItemGroup>
     <ClInclude Include="inc\3DStructs.h" />
     <ClInclude Include="inc\Formats.h" />
+    <ClInclude Include="inc\krak.h" />
     <ClInclude Include="inc\Mesh.h" />
     <ClInclude Include="inc\Texpack.h" />
     <ClInclude Include="inc\Wad.h" />

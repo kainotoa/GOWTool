@@ -56,6 +56,9 @@
     <ClInclude Include="inc\Texpack.h">
       <Filter>inc\Formats</Filter>
     </ClInclude>
+    <ClInclude Include="inc\krak.h">
+      <Filter>inc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />

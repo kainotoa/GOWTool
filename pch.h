@@ -8,6 +8,10 @@
 #include <fstream>
 #include <iostream>
 
+typedef unsigned char byte;
+typedef unsigned char uint8;
+typedef unsigned __int64 uint64;
+
 using std::ios;
 using std::ifstream;
 using std::ofstream;

@@ -12,9 +12,9 @@ class Texpack
 	struct BlockInfo
 	{
 		uint32_t _hash;
-		uint32_t _blockOff;
+		uint64_t _blockOff;
 		uint32_t _rawSize;
-		uint32_t _blockSize;
+		uint64_t _blockSize;
 		uint16_t _mipWidth;
 		uint16_t _mipHeight;
 	};
@@ -34,4 +34,5 @@ public:
 	bool ContainsTexture(uint64_t);
 	byte* ExportTexture(uint64_t,uint32_t&);
 	void ExportAll(string dir);
+	~Texpack();
 };

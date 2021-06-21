@@ -1,9 +1,10 @@
 #include <pch.h>
 #include <../inc/Texpack.h>
+#include <../inc/krak.h>
 
 Texpack::Texpack(string filename)
 {
-	ifstream fs = ifstream(filename, ios::in | ios::binary);
+	fs = ifstream(filename, ios::in | ios::binary);
 	fs.seekg(0, ios::end);
 	uint32_t end = fs.tellg();
 
@@ -70,5 +71,88 @@ Texpack::Texpack(string filename)
 				fs.seekg(flag, ios::beg);
 			}
 		}
+	}
+	LoadLib();
+}
+bool Texpack::ContainsTexture(uint64_t hash)
+{
+	for (int i = 0; i < _TexsCount; i++)
+	{
+		if (_texInfos[i]._globHash == hash)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+byte* Texpack::ExportTexture(uint64_t hash, uint32_t& expSize)
+{
+	uint32_t writeSize = 0x100;			// for gnf header
+	uint32_t writeOff = 0;
+	uint32_t texIdx = 0;
+	for (uint32_t i = 0; i < _TexsCount; i++)
+	{
+		if (_texInfos[i]._globHash == hash)
+		{
+			texIdx = i;
+			for (int e = 0; e < _texInfos[i]._blocks.size(); e++)
+			{
+				writeSize += _texInfos[i]._blocks[e]._rawSize;
+			}
+			break;
+		}
+	}
+
+	byte* output = new byte[writeSize];
+
+	uint32_t offset = 0;
+	uint32_t last = _texInfos[texIdx]._blocks.size() - 1;
+
+	offset = _texInfos[texIdx]._blocks[last]._blockOff;
+	byte* gnf = new byte[0x100];
+	fs.seekg(offset + 0x10, ios::beg);
+	fs.read((char*)gnf, 0x100);
+
+	memmove(output + writeOff, gnf, 0x100);
+	writeOff += 0x100;
+
+	for (int e = _texInfos[texIdx]._blocks.size() - 1; e >= 0; e--)
+	{
+		offset = _texInfos[texIdx]._blocks[e]._blockOff;
+
+		uint32_t rawSize = _texInfos[texIdx]._blocks[e]._rawSize;
+		byte* outbytes = new byte[rawSize + SAFE_SPACE];
+
+		uint32_t off = 0;
+		fs.seekg(offset + 4, ios::beg);
+		fs.read((char*)&off, sizeof(uint32_t));
+
+		uint32_t Size = _texInfos[texIdx]._blocks[e]._blockSize - off;
+
+		byte* inbytes = new byte[Size];
+		fs.seekg(offset + off, ios::beg);
+		fs.read((char*)inbytes, Size);
+
+		OodLZ_Decompress(inbytes, Size, outbytes, rawSize, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+		memmove(output + writeOff, outbytes, rawSize);
+		writeOff += rawSize;
+	}
+	expSize = writeSize;
+
+	return output;
+}
+void Texpack::ExportAll(string dir)
+{
+	for (uint32_t i = 0; i < _TexsCount; i++)
+	{
+		uint32_t size = 0;
+		byte* out = ExportTexture(_texInfos[i]._globHash, size);
+
+		string f = dir + "\\" + std::to_string(_texInfos[i]._globHash) + ".gnf";
+		ofstream fs = ofstream(f, ios::out | ios::binary);
+
+		fs.write((char*)out, size);
+		fs.close();
 	}
 }

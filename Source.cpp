@@ -1,12 +1,12 @@
 #include <pch.h>
 #include "../inc/Wad.h"
 #include <../inc/Texpack.h>
-#include <../inc/krak.h>
+#include <chrono>  // for high_resolution_clock
 
 int main(void)
 {
-	LoadLib();
-
+	//LoadLib();
+	/*
 	ifstream fs;
 	fs.open("", ios::binary | ios::in);
 
@@ -30,4 +30,28 @@ int main(void)
 	os.open("", ios::binary | ios::out);
 	os.write((char*)output, outbytes);
 	os.close();
+	
+
+	string o = R"(D:\texs\a.gnf)";
+	Texpack t = Texpack(f);
+	ofstream ofs = ofstream(o, ios::out | ios::binary);
+
+	uint32_t size = 0;
+	byte* out = t.ExportTexture(11829719752652319193, size);
+
+	ofs.write((char*)out, size);
+	ofs.close();
+	*/
+	auto start = std::chrono::high_resolution_clock::now();
+
+	string f = R"()";
+	Texpack t = Texpack(f);
+	auto finish = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsed = finish - start;
+	cout << elapsed.count();
+	//t.ExportAll(R"()");
+
+
+
+
 }

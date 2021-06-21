@@ -28,6 +28,10 @@ class Texpack
 	};
 	TexInfo* _texInfos;
 
+	ifstream fs;
 public:
 	Texpack(string);
+	bool ContainsTexture(uint64_t);
+	byte* ExportTexture(uint64_t,uint32_t&);
+	void ExportAll(string dir);
 };

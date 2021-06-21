@@ -1,4 +1,6 @@
 #pragma once
+
+
 #include <pch.h>
 #include <windows.h>
 
@@ -14,6 +16,8 @@ typedef int WINAPI OodLZ_DecompressFunc(uint8* src_buf, int src_len, uint8* dst,
 
 OodLZ_CompressFunc* OodLZ_Compress;
 OodLZ_DecompressFunc* OodLZ_Decompress;
+
+#define SAFE_SPACE 64
 
 void LoadLib() {
 

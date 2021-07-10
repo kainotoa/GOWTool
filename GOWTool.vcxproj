@@ -92,7 +92,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.\inc;.\src;.;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\inc;.\src;.;..\glTF-SDK\GLTFSDK\inc;</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Create</PrecompiledHeader>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -112,7 +112,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Create</PrecompiledHeader>
-      <AdditionalIncludeDirectories>.\inc;.\src;.;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\inc;.\src;.;..\glTF-SDK\GLTFSDK\inc;</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
@@ -129,7 +129,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>.\inc;.\src;.;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\inc;.\src;.;..\glTF-SDK\GLTFSDK\inc;</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -149,7 +149,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Create</PrecompiledHeader>
-      <AdditionalIncludeDirectories>.\inc;.\src;.;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\inc;.\src;.;..\glTF-SDK\GLTFSDK\inc;</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
@@ -177,6 +177,11 @@
     <ClInclude Include="inc\Texpack.h" />
     <ClInclude Include="inc\Wad.h" />
     <ClInclude Include="pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\glTF-SDK\GLTFSDK\GLTFSDK.vcxproj">
+      <Project>{a341ce35-58cd-3a11-852f-dc8140678ed1}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -5,58 +5,54 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="inc\Structs">
-      <UniqueIdentifier>{d7b541cd-e24e-44cb-9494-ab45db0e9407}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="inc\Formats">
-      <UniqueIdentifier>{c9134579-878d-4536-98c9-60a4a8ecb1e3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Formats">
-      <UniqueIdentifier>{1bafece6-6da0-4ee9-af89-858bc6e504f7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Main">
-      <UniqueIdentifier>{711c3375-dac7-4175-8198-da1b30d4f7e9}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source.cpp" />
     <ClCompile Include="src\Formats.cpp">
-      <Filter>src\Formats</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Wad.cpp">
-      <Filter>src\Formats</Filter>
+      <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\MainFunctions.cpp">
-      <Filter>src\Main</Filter>
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="Source.cpp" />
     <ClCompile Include="src\Texpack.cpp">
-      <Filter>src\Formats</Filter>
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Wad.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\glTFSerializer.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pch.h">
+    <ClInclude Include="inc\krak.h">
       <Filter>inc</Filter>
     </ClInclude>
-    <ClInclude Include="inc\3DStructs.h">
-      <Filter>inc\Structs</Filter>
+    <ClInclude Include="inc\Formats.h">
+      <Filter>inc</Filter>
     </ClInclude>
     <ClInclude Include="inc\Mesh.h">
-      <Filter>inc\Structs</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\Formats.h">
-      <Filter>inc\Formats</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\Wad.h">
-      <Filter>inc\Formats</Filter>
+      <Filter>inc</Filter>
     </ClInclude>
     <ClInclude Include="inc\Texpack.h">
-      <Filter>inc\Formats</Filter>
+      <Filter>inc</Filter>
     </ClInclude>
-    <ClInclude Include="inc\krak.h">
+    <ClInclude Include="inc\Wad.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="gltftest.h" />
+    <ClInclude Include="inc\MathFunctions.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\glTFSerializer.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\MainFunctions.h">
       <Filter>inc</Filter>
     </ClInclude>
   </ItemGroup>

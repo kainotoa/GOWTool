@@ -1,6 +1,6 @@
 #pragma once
 
-#include "3DStructs.h"
+#include "MathFunctions.h"
 
 struct RawMesh
 {

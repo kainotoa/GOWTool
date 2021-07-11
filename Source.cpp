@@ -1,57 +1,44 @@
-#include <pch.h>
-#include "../inc/Wad.h"
-#include <../inc/Texpack.h>
-#include <chrono>  // for high_resolution_clock
-
+#include "pch.h"
+#include "MainFunctions.h"
+#include <filesystem>
+#include "glTFSerializer.h"
 int main(void)
 {
-	//LoadLib();
-	/*
-	ifstream fs;
-	fs.open("", ios::binary | ios::in);
+    string lod = R"(D:\God.of.War.4.Latino\CUSA07408\exec\wad\orbis_le\root.lodpack)";
+    string m = R"(D:\r_heroa00\1\MG_heroa00_0.dat)";
+    string g = R"(D:\r_heroa00\29\MG_heroa00_0_gpu.dat)";
 
-	uint32_t size = 670212;
-	uint32_t rawsize = 1048576;
-
-
-	byte* input = new byte[size];
-	fs.seekg(288, ios::beg);
-	fs.read((char*)input, size);
-
-	byte* output = NULL;
-	output = new byte[rawsize + 64];
-
-	int outbytes = 0;
-	outbytes = OodLZ_Decompress(input, size, output, rawsize, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-	cout << outbytes;
-	fs.close();
-	ofstream os;
-
-	os.open("", ios::binary | ios::out);
-	os.write((char*)output, outbytes);
-	os.close();
-	
-
-	string o = R"(D:\texs\a.gnf)";
-	Texpack t = Texpack(f);
-	ofstream ofs = ofstream(o, ios::out | ios::binary);
-
-	uint32_t size = 0;
-	byte* out = t.ExportTexture(11829719752652319193, size);
-
-	ofs.write((char*)out, size);
-	ofs.close();
-	*/
-	auto start = std::chrono::high_resolution_clock::now();
-
-	string f = R"()";
-	Texpack t = Texpack(f);
-	auto finish = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double> elapsed = finish - start;
-	cout << elapsed.count();
-	//t.ExportAll(R"()");
+    ifstream gStream(g, std::ios::in | std::ios::binary);
+    ifstream lodStream(lod, std::ios::in | std::ios::binary);
 
 
+    Lodpack lodpack;
+    lodpack.ReadLodpack(lod);
 
+    MGDefinition mgdef;
+    mgdef.ReadMG(m);
 
+    auto infos = getMeshesInfo(mgdef, m);
+    vector<RawMesh> meshes;
+    for (int i = 0; i < infos.size(); i++)
+    {
+        if (infos[i].LODlvl > 0)
+            continue;
+        if (infos[i].Hash == 0)
+            meshes.push_back(containRawMesh(infos[i], gStream));
+        else
+        {
+            for (int e = 0; e < lodpack.TotalmembersCount; e++)
+            {
+                if (lodpack.memberHash[e] == infos[i].Hash)
+                {
+                    meshes.push_back(containRawMesh(infos[i], lodStream, lodpack.memberOffsetter[e] + lodpack.groupStartOff[lodpack.memberGroupIndex[e]]));
+                }
+            }
+
+        }
+    }
+    WriteGLTF(std::filesystem::path(R"(D:\test.glb)"), meshes);
+    gStream.close();
+    lodStream.close();
 }

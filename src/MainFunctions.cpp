@@ -1,6 +1,6 @@
 #include <pch.h>
-
-#include "../inc/3Dstructs.h"
+#include "MainFunctions.h"
+#include "MathFunctions.h"
 #include "../inc/Mesh.h"
 #include "../inc/Formats.h"
 
@@ -53,7 +53,7 @@ inline uint32_t OffsetFinder(std::ifstream& uFs, std::vector<MeshComp> meshcomp,
 
     return returnOffset;
 }
-inline std::vector<MeshInfo> getMeshesInfo(MGDefinition mg,std::string filename)
+std::vector<MeshInfo> getMeshesInfo(MGDefinition mg,std::string filename)
 {
 	std::ifstream file;
 	file.open(filename, std::ios::in | std::ios::binary);
@@ -173,14 +173,11 @@ inline std::vector<MeshInfo> getMeshesInfo(MGDefinition mg,std::string filename)
 	}
 	return meshesInfo;
 }
-inline RawMesh containRawMesh(MeshInfo meshinfo, std::string filename, uint32_t off = 0)
+RawMesh containRawMesh(MeshInfo meshinfo, std::ifstream& file , uint32_t off)
 {
     std::cout << "Vertex Offset - " << (meshinfo.vertOffset + off) << " FVF - " << meshinfo.Stride << std::endl;
 
     RawMesh Mesh(meshinfo.vertCount, meshinfo.indCount);
-
-    std::ifstream file;
-    file.open(filename, std::ios::in | std::ios::binary);
 
     for (uint32_t v = 0; v < meshinfo.vertCount; v++)
     {

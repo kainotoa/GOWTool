@@ -1,13 +1,11 @@
 #pragma once
 
 #include <cstdint>
-#include <cmath>
 #include <vector>
-#include <cstdint>
 #include <string>
 #include <fstream>
 #include <iostream>
-
+#include <filesystem>
 typedef unsigned char byte;
 typedef unsigned char uint8;
 typedef unsigned __int64 uint64;

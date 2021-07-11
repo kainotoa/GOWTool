@@ -96,6 +96,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Create</PrecompiledHeader>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -114,6 +115,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
       <AdditionalIncludeDirectories>.\inc;.\src;.;..\glTF-SDK\GLTFSDK\inc;</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,6 +134,7 @@
       <AdditionalIncludeDirectories>.\inc;.\src;.;..\glTF-SDK\GLTFSDK\inc;</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Create</PrecompiledHeader>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -151,6 +154,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
       <AdditionalIncludeDirectories>.\inc;.\src;.;..\glTF-SDK\GLTFSDK\inc;</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -165,12 +169,16 @@
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="src\Formats.cpp" />
+    <ClCompile Include="src\glTFSerializer.cpp" />
     <ClCompile Include="src\MainFunctions.cpp" />
     <ClCompile Include="src\Texpack.cpp" />
     <ClCompile Include="src\Wad.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="inc\3DStructs.h" />
+    <ClInclude Include="gltftest.h" />
+    <ClInclude Include="inc\glTFSerializer.h" />
+    <ClInclude Include="inc\MainFunctions.h" />
+    <ClInclude Include="inc\MathFunctions.h" />
     <ClInclude Include="inc\Formats.h" />
     <ClInclude Include="inc\krak.h" />
     <ClInclude Include="inc\Mesh.h" />

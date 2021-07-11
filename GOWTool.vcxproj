@@ -175,7 +175,6 @@
     <ClCompile Include="src\Wad.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="gltftest.h" />
     <ClInclude Include="inc\glTFSerializer.h" />
     <ClInclude Include="inc\MainFunctions.h" />
     <ClInclude Include="inc\MathFunctions.h" />

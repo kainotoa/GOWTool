@@ -45,7 +45,6 @@
       <Filter>inc</Filter>
     </ClInclude>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="gltftest.h" />
     <ClInclude Include="inc\MathFunctions.h">
       <Filter>inc</Filter>
     </ClInclude>

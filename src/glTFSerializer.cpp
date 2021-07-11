@@ -60,7 +60,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
     string accessorIdTangents;
     string accessorIdTexCoord0;
     string accessorIdTexCoord1;
-
+    string accessorIdTexCoord2;
     // Create a BufferView with a target of ELEMENT_ARRAY_BUFFER (as it will reference index
     // data) - it will be the 'current' BufferView that all the Accessors created by this
     // BufferBuilder will automatically reference
@@ -148,6 +148,13 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
     }
     accessorIdTexCoord1 = bufferBuilder.AddAccessor(texcoords1, { TYPE_VEC2, COMPONENT_FLOAT }).id;
 
+    std::vector<float> texcoords2;
+    for (int i = 0; i < expMesh.VertCount; i++)
+    {
+        texcoords2.push_back(expMesh.txcoord2[i].X);
+        texcoords2.push_back(expMesh.txcoord2[i].Y);
+    }
+    accessorIdTexCoord2 = bufferBuilder.AddAccessor(texcoords2, { TYPE_VEC2, COMPONENT_FLOAT }).id;
     // Create a very simple glTF Document with the following hierarchy:
     //  Scene
     //     Node
@@ -182,6 +189,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
     meshPrimitive.attributes[ACCESSOR_TANGENT] = accessorIdTangents;
     meshPrimitive.attributes[ACCESSOR_TEXCOORD_0] = accessorIdTexCoord0;
     meshPrimitive.attributes[ACCESSOR_TEXCOORD_1] = accessorIdTexCoord1;
+    meshPrimitive.attributes["TEXCOORD_2"] = accessorIdTexCoord2;
     // Construct a Mesh and add the MeshPrimitive as a child
     Mesh mesh;
     mesh.primitives.push_back(std::move(meshPrimitive));

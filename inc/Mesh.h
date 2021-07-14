@@ -30,9 +30,9 @@ struct RawMesh
 		, joints{ new uint16_t*[indCount] }
 		, weights{ new float*[vertCount] }
 	{
-		for (int i = 0; i < VertCount; i++)
+		for (uint32_t i = 0; i < VertCount; i++)
 			joints[i] = new uint16_t[4];
-		for (int i = 0; i < VertCount; i++)
+		for (uint32_t i = 0; i < VertCount; i++)
 			weights[i] = new float[4];
 	}
 };

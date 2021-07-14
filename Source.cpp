@@ -1,12 +1,13 @@
 #include "pch.h"
-#include "MainFunctions.h"
-#include <filesystem>
+#include "Rig.h"
 #include "glTFSerializer.h"
+#include "Formats.h"
+#include "MainFunctions.h"
 int main(void)
 {
     string lod = R"(D:\God.of.War.4.Latino\CUSA07408\exec\wad\orbis_le\root.lodpack)";
-    string m = R"(D:\r_heroa00\1\MG_heroa00_0.dat)";
-    string g = R"(D:\r_heroa00\29\MG_heroa00_0_gpu.dat)";
+    string m = R"(D:\r_athena00\1\MG_athena00_0.dat)";
+    string g = R"(D:\r_athena00\29\MG_athena00_0_gpu.dat)";
 
     ifstream gStream(g, std::ios::in | std::ios::binary);
     ifstream lodStream(lod, std::ios::in | std::ios::binary);
@@ -38,7 +39,9 @@ int main(void)
 
         }
     }
-    WriteGLTF(std::filesystem::path(R"(D:\test.glb)"), meshes);
+    //Rig rig;
+    Rig rig(R"(D:\r_athena00\1\goProtoathena00.dat)");
+    WriteGLTF(std::filesystem::path(R"(D:\test.glb)"),meshes,rig);
     gStream.close();
     lodStream.close();
 }

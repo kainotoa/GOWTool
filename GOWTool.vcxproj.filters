@@ -27,6 +27,12 @@
     <ClCompile Include="src\glTFSerializer.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\Rig.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MathFunctions.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\krak.h">
@@ -52,6 +58,9 @@
       <Filter>inc</Filter>
     </ClInclude>
     <ClInclude Include="inc\MainFunctions.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\Rig.h">
       <Filter>inc</Filter>
     </ClInclude>
   </ItemGroup>

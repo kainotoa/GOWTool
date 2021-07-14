@@ -286,6 +286,7 @@ RawMesh containRawMesh(MeshInfo meshinfo, std::ifstream& file , uint32_t off)
         file.seekg((uint64_t)meshinfo.norOffset + (uint64_t)NorStride * i + off);
         file.read((char*)&NorRead32, sizeof(uint32_t));
         Vec4 vec = TenBitShifted(NorRead32);
+        vec.normalize();
         Mesh.normals[i].X = vec.X;
         Mesh.normals[i].Y = vec.Y;
         Mesh.normals[i].Z = vec.Z;
@@ -310,6 +311,7 @@ RawMesh containRawMesh(MeshInfo meshinfo, std::ifstream& file , uint32_t off)
 
         file.read((char*)&TanRead32, sizeof(uint32_t));
         Vec4 vec = TenBitShifted(TanRead32);
+        vec.normalize();
         Mesh.tangents[i].X = vec.X;
         Mesh.tangents[i].Y = vec.Y;
         Mesh.tangents[i].Z = vec.Z;
@@ -327,7 +329,7 @@ RawMesh containRawMesh(MeshInfo meshinfo, std::ifstream& file , uint32_t off)
     {
         BoneStride = meshinfo.jointSize;
     }
-    for (int i = 0; i < meshinfo.vertCount; i++)
+    for (uint32_t i = 0; i < meshinfo.vertCount; i++)
     {
         file.seekg((uint64_t)meshinfo.jointOffset + (uint64_t)BoneStride * i + off);
 
@@ -387,10 +389,13 @@ RawMesh containRawMesh(MeshInfo meshinfo, std::ifstream& file , uint32_t off)
 
             Vec4 vec = TenBitUnsigned(wgtRead);
 
-            Mesh.weights[i][0] = vec.X;
-            Mesh.weights[i][1] = vec.Y;
-            Mesh.weights[i][2] = vec.Z;
-            Mesh.weights[i][3] = vec.W * 3 /(float)1023;
+            float sum = vec.X + vec.Y + vec.Z;
+            float NorRatio = 1 / sum;
+            Mesh.weights[i][0] = vec.X * NorRatio;
+            Mesh.weights[i][1] = vec.Y * NorRatio;
+            Mesh.weights[i][2] = vec.Z * NorRatio;
+            Mesh.weights[i][3] = 0.f;
+            //Mesh.weights[i][3] = vec.W * 3 /1023.f;
         }
         else
         {

@@ -171,6 +171,8 @@
     <ClCompile Include="src\Formats.cpp" />
     <ClCompile Include="src\glTFSerializer.cpp" />
     <ClCompile Include="src\MainFunctions.cpp" />
+    <ClCompile Include="src\MathFunctions.cpp" />
+    <ClCompile Include="src\Rig.cpp" />
     <ClCompile Include="src\Texpack.cpp" />
     <ClCompile Include="src\Wad.cpp" />
   </ItemGroup>
@@ -181,6 +183,7 @@
     <ClInclude Include="inc\Formats.h" />
     <ClInclude Include="inc\krak.h" />
     <ClInclude Include="inc\Mesh.h" />
+    <ClInclude Include="inc\Rig.h" />
     <ClInclude Include="inc\Texpack.h" />
     <ClInclude Include="inc\Wad.h" />
     <ClInclude Include="pch.h" />

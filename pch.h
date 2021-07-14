@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <stdexcept>
 typedef unsigned char byte;
 typedef unsigned char uint8;
 typedef unsigned __int64 uint64;

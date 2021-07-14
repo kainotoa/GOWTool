@@ -52,7 +52,7 @@ public:
 private:
     std::filesystem::path m_pathBase;
 };
-auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& expMesh)
+auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& expMesh, bool Skinned)
 {
     string accessorIdIndices;
     string accessorIdPositions;
@@ -61,6 +61,8 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
     string accessorIdTexCoord0;
     string accessorIdTexCoord1;
     string accessorIdTexCoord2;
+    string accessorIdJoints0;
+    string accessorIdWeights0;
     // Create a BufferView with a target of ELEMENT_ARRAY_BUFFER (as it will reference index
     // data) - it will be the 'current' BufferView that all the Accessors created by this
     // BufferBuilder will automatically reference
@@ -109,7 +111,6 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
     std::vector<float> normals;
     for (int i = 0; i < expMesh.VertCount; i++)
     {
-        expMesh.normals[i].normalize();
         normals.push_back(expMesh.normals[i].X);
         normals.push_back(expMesh.normals[i].Y);
         normals.push_back(expMesh.normals[i].Z);
@@ -120,7 +121,6 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
     std::vector<float> tangents;
     for (int i = 0; i < expMesh.VertCount; i++)
     {
-        expMesh.tangents[i].normalize();
         tangents.push_back(expMesh.tangents[i].X);
         tangents.push_back(expMesh.tangents[i].Y);
         tangents.push_back(expMesh.tangents[i].Z);
@@ -155,6 +155,24 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
         texcoords2.push_back(expMesh.txcoord2[i].Y);
     }
     accessorIdTexCoord2 = bufferBuilder.AddAccessor(texcoords2, { TYPE_VEC2, COMPONENT_FLOAT }).id;
+    std::vector<uint16_t> joints0;
+    for (int i = 0; i < expMesh.VertCount; i++)
+    {
+        joints0.push_back(expMesh.joints[i][0]);
+        joints0.push_back(expMesh.joints[i][1]);
+        joints0.push_back(expMesh.joints[i][2]);
+        joints0.push_back(expMesh.joints[i][3]);
+    }
+    accessorIdJoints0 = bufferBuilder.AddAccessor(joints0, { TYPE_VEC4, COMPONENT_UNSIGNED_SHORT }).id;
+    std::vector<float> weights0;
+    for (int i = 0; i < expMesh.VertCount; i++)
+    {
+        weights0.push_back(expMesh.weights[i][0]);
+        weights0.push_back(expMesh.weights[i][1]);
+        weights0.push_back(expMesh.weights[i][2]);
+        weights0.push_back(expMesh.weights[i][3]);
+    }
+    accessorIdWeights0 = bufferBuilder.AddAccessor(weights0, { TYPE_VEC4, COMPONENT_FLOAT }).id;
     // Create a very simple glTF Document with the following hierarchy:
     //  Scene
     //     Node
@@ -190,6 +208,8 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
     meshPrimitive.attributes[ACCESSOR_TEXCOORD_0] = accessorIdTexCoord0;
     meshPrimitive.attributes[ACCESSOR_TEXCOORD_1] = accessorIdTexCoord1;
     meshPrimitive.attributes["TEXCOORD_2"] = accessorIdTexCoord2;
+    meshPrimitive.attributes[ACCESSOR_JOINTS_0] = accessorIdJoints0;
+    meshPrimitive.attributes[ACCESSOR_WEIGHTS_0] = accessorIdWeights0;
     // Construct a Mesh and add the MeshPrimitive as a child
     Mesh mesh;
     mesh.primitives.push_back(std::move(meshPrimitive));
@@ -199,12 +219,14 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
     // Construct a Node adding a reference to the Mesh
     Node node;
     node.meshId = meshId;
+    if(Skinned)
+    node.skinId = "0";
     // Add it to the Document and store the generated ID
     auto nodeId = document.nodes.Append(std::move(node), AppendIdPolicy::GenerateOnEmpty).id;
 
     return nodeId;
 }
-void WriteGLTF(const std::filesystem::path& path, const vector<RawMesh>& expMeshes)
+void WriteGLTF(const std::filesystem::path& path, const vector<RawMesh>& expMeshes, const Rig& Armature)
 {
     // Pass the absolute path, without the filename, to the stream writer
     auto streamWriter = std::make_unique<StreamWriter>(path.parent_path());
@@ -262,9 +284,64 @@ void WriteGLTF(const std::filesystem::path& path, const vector<RawMesh>& expMesh
 
     // Construct a Scene
     Scene scene;
-    for (int i = 0; i < expMeshes.size(); i++)
+    if (Armature.boneCount > 0)
     {
-        scene.nodes.push_back(AddMesh(document, bufferBuilder,expMeshes[i]));
+        std::vector<Node> nodes;
+        std::vector<string> nodeIds;
+        for (uint16_t i = 0; i < Armature.boneCount; i++)
+        {
+            Node node;
+            node.name = Armature.boneNames[i];
+            node.matrix = Microsoft::glTF::Matrix4();
+            for (size_t r = 0; r < 4; r++)
+            {
+                for (size_t c = 0; c < 4; c++)
+                {
+                    node.matrix.values[r * 4 + c] = Armature.matrix[i][r][c];
+                }
+            }
+            nodes.push_back(node);
+            if (Armature.boneParents[i] > -1)
+                nodes[Armature.boneParents[i]].children.push_back(std::to_string(i));
+        }
+        for (uint16_t i = 0; i < Armature.boneCount; i++)
+        {
+            nodeIds.push_back(document.nodes.Append(std::move(nodes[i]), AppendIdPolicy::GenerateOnEmpty).id);
+        }
+        scene.nodes.push_back(nodeIds[0]);
+        Skin skin;
+        skin.jointIds = nodeIds;
+
+        // Create a BufferView with target ARRAY_BUFFER (as it will reference IBM'sdata)
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
+
+        std::vector<float> IBMs;
+        for (uint16_t i = 0; i < Armature.boneCount; i++)
+        {
+
+            for (size_t r = 0; r < 4; r++)
+            {
+                for (size_t c = 0; c < 4; c++)
+                {
+                    IBMs.push_back(Armature.IBMs[i][r][c]);
+                }
+            }
+        }
+
+        skin.inverseBindMatricesAccessorId = bufferBuilder.AddAccessor(IBMs, { TYPE_MAT4, COMPONENT_FLOAT }).id;
+
+        document.skins.Append(std::move(skin), AppendIdPolicy::GenerateOnEmpty);
+        for (int i = 0; i < expMeshes.size(); i++)
+        {
+            AddMesh(document, bufferBuilder, expMeshes[i],true);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < expMeshes.size(); i++)
+        {
+            scene.nodes.push_back(AddMesh(document, bufferBuilder, expMeshes[i],false));
+        }
     }
     // Add it to the Document, using a utility method that also sets the Scene as the Document's default
     document.SetDefaultScene(std::move(scene), AppendIdPolicy::GenerateOnEmpty);

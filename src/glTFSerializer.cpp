@@ -71,7 +71,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
     // Add an Accessor for the indices
     std::vector<uint16_t> indices;
 
-    for (int i = 0; i < expMesh.IndCount; i += 3)
+    for (uint32_t i = 0; i < expMesh.IndCount; i += 3)
     {
         indices.push_back(expMesh.indices[i + 1]);
         indices.push_back(expMesh.indices[i]);
@@ -86,7 +86,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
     
     // Add an Accessor for the positions
     std::vector<float> positions;
-    for (int i = 0; i < expMesh.VertCount; i++)
+    for (uint32_t i = 0; i < expMesh.VertCount; i++)
     {
         positions.push_back(expMesh.vertices[i].X);
         positions.push_back(expMesh.vertices[i].Y);
@@ -109,7 +109,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
 
     // Add an Accessor for the normals
     std::vector<float> normals;
-    for (int i = 0; i < expMesh.VertCount; i++)
+    for (uint32_t i = 0; i < expMesh.VertCount; i++)
     {
         normals.push_back(expMesh.normals[i].X);
         normals.push_back(expMesh.normals[i].Y);
@@ -119,7 +119,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
 
     // Add an Accessor for the tangents
     std::vector<float> tangents;
-    for (int i = 0; i < expMesh.VertCount; i++)
+    for (uint32_t i = 0; i < expMesh.VertCount; i++)
     {
         tangents.push_back(expMesh.tangents[i].X);
         tangents.push_back(expMesh.tangents[i].Y);
@@ -131,7 +131,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
 
     // Add an Accessor for the tangents
     std::vector<float> texcoords0;
-    for (int i = 0; i < expMesh.VertCount; i++)
+    for (uint32_t i = 0; i < expMesh.VertCount; i++)
     {
         texcoords0.push_back(expMesh.txcoord0[i].X);
         texcoords0.push_back(expMesh.txcoord0[i].Y);
@@ -141,7 +141,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
 
     // Add an Accessor for the tangents
     std::vector<float> texcoords1;
-    for (int i = 0; i < expMesh.VertCount; i++)
+    for (uint32_t i = 0; i < expMesh.VertCount; i++)
     {
         texcoords1.push_back(expMesh.txcoord1[i].X);
         texcoords1.push_back(expMesh.txcoord1[i].Y);
@@ -149,14 +149,14 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
     accessorIdTexCoord1 = bufferBuilder.AddAccessor(texcoords1, { TYPE_VEC2, COMPONENT_FLOAT }).id;
 
     std::vector<float> texcoords2;
-    for (int i = 0; i < expMesh.VertCount; i++)
+    for (uint32_t i = 0; i < expMesh.VertCount; i++)
     {
         texcoords2.push_back(expMesh.txcoord2[i].X);
         texcoords2.push_back(expMesh.txcoord2[i].Y);
     }
     accessorIdTexCoord2 = bufferBuilder.AddAccessor(texcoords2, { TYPE_VEC2, COMPONENT_FLOAT }).id;
     std::vector<uint16_t> joints0;
-    for (int i = 0; i < expMesh.VertCount; i++)
+    for (uint32_t i = 0; i < expMesh.VertCount; i++)
     {
         joints0.push_back(expMesh.joints[i][0]);
         joints0.push_back(expMesh.joints[i][1]);
@@ -165,7 +165,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMesh& ex
     }
     accessorIdJoints0 = bufferBuilder.AddAccessor(joints0, { TYPE_VEC4, COMPONENT_UNSIGNED_SHORT }).id;
     std::vector<float> weights0;
-    for (int i = 0; i < expMesh.VertCount; i++)
+    for (uint32_t i = 0; i < expMesh.VertCount; i++)
     {
         weights0.push_back(expMesh.weights[i][0]);
         weights0.push_back(expMesh.weights[i][1]);
@@ -284,7 +284,7 @@ void WriteGLTF(const std::filesystem::path& path, const vector<RawMesh>& expMesh
 
     // Construct a Scene
     Scene scene;
-    if (Armature.boneCount > 0)
+    if (Armature.boneCount > 0u)
     {
         std::vector<Node> nodes;
         std::vector<string> nodeIds;
@@ -331,7 +331,7 @@ void WriteGLTF(const std::filesystem::path& path, const vector<RawMesh>& expMesh
         skin.inverseBindMatricesAccessorId = bufferBuilder.AddAccessor(IBMs, { TYPE_MAT4, COMPONENT_FLOAT }).id;
 
         document.skins.Append(std::move(skin), AppendIdPolicy::GenerateOnEmpty);
-        for (int i = 0; i < expMeshes.size(); i++)
+        for (size_t i = 0; i < expMeshes.size(); i++)
         {
             AddMesh(document, bufferBuilder, expMeshes[i],true);
         }

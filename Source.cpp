@@ -21,7 +21,7 @@ int main(void)
 
     auto infos = getMeshesInfo(mgdef, m);
     vector<RawMesh> meshes;
-    for (int i = 0; i < infos.size(); i++)
+    for (size_t i = 0; i < infos.size(); i++)
     {
         if (infos[i].LODlvl > 0)
             continue;
@@ -29,7 +29,7 @@ int main(void)
             meshes.push_back(containRawMesh(infos[i], gStream));
         else
         {
-            for (int e = 0; e < lodpack.TotalmembersCount; e++)
+            for (uint32_t e = 0; e < lodpack.TotalmembersCount; e++)
             {
                 if (lodpack.memberHash[e] == infos[i].Hash)
                 {

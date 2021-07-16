@@ -3,11 +3,24 @@
 #include "glTFSerializer.h"
 #include "Formats.h"
 #include "MainFunctions.h"
+#include  "Texpack.h"
 int main(void)
 {
+    /*
+    for (auto& p : std::filesystem::directory_iterator(R"(D:\tetet\New folder\1)"))
+    {
+        if (p.path().string().find("MG_") != std::string::npos)
+        {
+            cout << p.path().string() << "\n";
+            MGDefinition mg;
+            mg.ReadMG(p.path().string());
+        }
+    }
+    */
+    
     string lod = R"(D:\God.of.War.4.Latino\CUSA07408\exec\wad\orbis_le\root.lodpack)";
-    string m = R"(D:\r_athena00\1\MG_athena00_0.dat)";
-    string g = R"(D:\r_athena00\29\MG_athena00_0_gpu.dat)";
+    string m = R"(D:\tetet\New folder\1\MG_freya00_0.dat)";
+    string g = R"(D:\tetet\New folder\29\MG_freya00_0_gpu.dat)";
 
     ifstream gStream(g, std::ios::in | std::ios::binary);
     ifstream lodStream(lod, std::ios::in | std::ios::binary);
@@ -17,10 +30,11 @@ int main(void)
     lodpack.ReadLodpack(lod);
 
     MGDefinition mgdef;
-    mgdef.ReadMG(m);
 
-    auto infos = getMeshesInfo(mgdef, m);
-    vector<RawMesh> meshes;
+
+    auto infos = mgdef.ReadMG(m);
+    vector<RawMeshContainer> meshes;
+    int count = 0;
     for (size_t i = 0; i < infos.size(); i++)
     {
         if (infos[i].LODlvl > 0)
@@ -38,10 +52,12 @@ int main(void)
             }
 
         }
+        count++;
     }
     //Rig rig;
-    Rig rig(R"(D:\r_athena00\1\goProtoathena00.dat)");
-    WriteGLTF(std::filesystem::path(R"(D:\test.glb)"),meshes,rig);
+    Rig rig(R"(D:\tetet\New folder\1\goProtofreya00.dat)");
+    WriteGLTF(std::filesystem::path(R"(D:\test.glb)"), meshes, rig);
     gStream.close();
     lodStream.close();
-}
+    
+} 

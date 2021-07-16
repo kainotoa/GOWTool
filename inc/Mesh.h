@@ -2,84 +2,72 @@
 
 #include "MathFunctions.h"
 
-struct RawMesh
+struct RawMeshContainer
 {
-	uint32_t VertCount, IndCount;
-	Vec3* vertices;
-	Vec3* normals;
-	Vec4* tangents;
-	Vec2* txcoord0;
-	Vec2* txcoord1;
-	Vec2* txcoord2;
-	Vec2* txcoord3;
-	uint16_t* indices;
-	uint16_t** joints;
-	float** weights;
-	
-	RawMesh(uint32_t vertCount, uint32_t indCount)
-		: VertCount { vertCount }
-	    , IndCount { indCount }
-		, vertices{ new Vec3[vertCount] }
-		, normals{ new Vec3[vertCount] }
-		, tangents{ new Vec4[vertCount] }
-		, txcoord0{ new Vec2[vertCount] }
-		, txcoord1{ new Vec2[vertCount] }
-		, txcoord2{ new Vec2[vertCount] }
-		, txcoord3{ new Vec2[vertCount] }
-		, indices{ new uint16_t[indCount] }
-		, joints{ new uint16_t*[indCount] }
-		, weights{ new float*[vertCount] }
-	{
-		for (uint32_t i = 0; i < VertCount; i++)
-			joints[i] = new uint16_t[4];
-		for (uint32_t i = 0; i < VertCount; i++)
-			weights[i] = new float[4];
-	}
+	uint32_t VertCount{ 0 }, IndCount{ 0 };
+	Vec3* vertices{ nullptr };
+	Vec3* normals{ nullptr };
+	Vec4* tangents{ nullptr };
+	Vec2* txcoord0{ nullptr };
+	Vec2* txcoord1{ nullptr };
+	Vec2* txcoord2{ nullptr };
+	uint16_t* indices{ nullptr };
+	uint16_t** joints{ nullptr };
+	float** weights{ nullptr };
+	RawMeshContainer() = default;
 };
-enum ComponentTypes
+enum PrimitiveTypes
 {
-	POSITION, NORMALS, TANGENTS, TEXCOORD_0, TEXCOORD_1, TEXCOORD_2, JOINTS0 = 9, WEIGHTS0
+	POSITION,
+	NORMALS,
+	TANGENTS,
+	TEXCOORD_0,
+	TEXCOORD_1,
+	TEXCOORD_2,
+	UNKNOWN0,
+	UNKNOWN1,
+	UNKNOWN2,
+	JOINTS0 = 9,
+	WEIGHTS0,
+	UNKNOWN3,
+	UNKNOWN4,
+	UNKNOWN5,
+	UNKNOWN6,
+	UNKNOWN7
 };
-struct MeshComp
+
+enum DataTypes
 {
-	ComponentTypes compID;
-	uint16_t dataType;
-	uint16_t elemCount;
-	uint16_t strider;
-	uint16_t index;
+	FLOAT,
+	HALFWORD_STRUCT_0,
+	WORD_STRUCT_0,
+	WORD_STRUCT_1,        // TEN TEN TEN 2 Normalized maybe? but sometimes its unsigned 1023 normalized (for weights) other times signed -511 shift 512 normalized 1's or 2's compliment maybe
+	HALFWORD_STRUCT_1,   // USHORT un normalized maybe
+	UNSIGNED_SHORT = 6,	// USHORT normalized
+	HALFWORD_STRUCT_2,  //USHORT half normalized or compliment bs maybe
+	BYTE_STRUCT_0		//UBYTE_UNORM
+};
+struct Component
+{
+	PrimitiveTypes primitiveType;
+	DataTypes dataType;
+	uint8_t elementCount;
+	uint8_t offset;
+	uint8_t bufferIndex;
 };
 struct MeshInfo
 {
-	uint64_t Hash { 0 };
-	uint32_t vertCount { 0 };
-	uint32_t indCount { 0 };
-	uint16_t txcoordCount { 0 };
-	uint32_t vertOffset { 0 };
-	uint32_t indOffset { 0 };
-	uint32_t norOffset { 0 };
-	uint32_t tanOffset { 0 };
-	vector<uint32_t> txcoordOffsets { };
-	uint32_t jointOffset { 0 };
-	uint32_t weightOffset { 0 };
+	uint64_t Hash{ 0 };
+	uint32_t vertCount{ 0 };
+	uint32_t indCount{ 0 };
+	uint64_t vertexOffset{ UINT64_MAX };
+	uint64_t indicesOffset{ UINT64_MAX };
+	vector<Component> Components;
+	vector<uint64_t> bufferOffset;
+	vector<uint16_t> bufferStride;
 
-	uint16_t Stride { 0 };
-	uint16_t buffC { 0 };
-	uint16_t compC { 0 };
-
-	uint16_t vertSize { 0 };
-	vector<uint16_t> txcoordSize { };
-	uint16_t jointSize { 0 };
-
-	Vec3 meshScale { };
-	Vec3 meshMin { };
-
-	uint16_t LODlvl { 0 };
-
-	uint16_t norDetectCounter { 0 };
-	uint16_t tanDetectCounter { 0 };
-	uint16_t jointDetectCounter { 0 };
-	uint16_t weightDetectCounter { 0 };
-	vector<uint16_t> txcoordDetectCounter { };
-
-	uint16_t boneAssociated { 0 };
+	Vec3 meshScale{ };
+	Vec3 meshMin{ };
+	uint16_t LODlvl{ 0 };
+	uint16_t boneAssociated{ 0 };
 };

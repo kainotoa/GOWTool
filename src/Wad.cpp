@@ -1,14 +1,11 @@
-#include <pch.h>
-
+#include "pch.h"
 #include "Wad.h"
 
 WADFile::WADFile(string filename)
 {
-	ifstream fs;
 	fs.open(filename, ios::in | ios::binary);
-
 	fs.seekg(0, ios::end);
-	uint32_t end = fs.tellg();
+	size_t end = fs.tellg();
 
 	uint16_t group = 0;
 	uint32_t size = 0;
@@ -42,5 +39,16 @@ WADFile::WADFile(string filename)
 			a = fs.tellg();
 		}
 	}
-
+}
+bool WADFile::GetBuffer(uint32_t entryIdx,std::stringstream& outstream)
+{
+	outstream.str("");
+	outstream.clear();
+	if (entryIdx >= _Entries.size())
+		return false;
+	std::unique_ptr<char[]> arr = std::make_unique<char[]>(_Sizes[entryIdx]);
+	fs.seekg(_Offsets[entryIdx], std::ios::beg);
+	fs.read(arr.get(), _Sizes[entryIdx]);
+	outstream.write(arr.get(), _Sizes[entryIdx]);
+	return true;
 }

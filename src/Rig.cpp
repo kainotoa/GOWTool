@@ -1,10 +1,8 @@
 #include "pch.h"
 #include "Rig.h"
 
-Rig::Rig(string filename)
+Rig::Rig(std::stringstream& fs)
 {
-	std::ifstream fs(filename, std::ios::binary | std::ios::in);
-
 	fs.seekg(12, std::ios::beg);
 	fs.read((char*)&boneCount, sizeof(uint16_t));
 	boneParents = new int16_t[boneCount];

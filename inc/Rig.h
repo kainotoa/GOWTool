@@ -10,6 +10,6 @@ public:
 	Matrix4x4* matrix;
 	Matrix4x4* IBMs;
 public:
-	Rig(string filenam);
+	Rig(std::stringstream& fs);
 	Rig() = default;
 };

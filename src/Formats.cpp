@@ -1,59 +1,14 @@
 #include <pch.h>
 #include "Formats.h"
 
-void Lodpack::ReadLodpack(std::string filename)
-{
-	ifstream file(filename, ios::in | ios::binary);
-	file.read((char *) &groupCount, sizeof(uint32_t));
-
-	groupStartOff = new uint32_t[groupCount];
-	groupHash = new uint64_t[groupCount];
-	groupBlockSize = new uint32_t[groupCount];
-
-	file.seekg(16);
-	for (uint32_t i = 0; i < groupCount; i++)
-	{
-		file.read((char *) &groupStartOff[i], sizeof(uint32_t));
-		file.seekg(4, file.cur);
-	//	std::cout << "\noffset = " << file.tellg() << " index = " << i;
-		file.read((char*) &groupHash[i], sizeof(uint64_t));
-		file.read((char*) &groupBlockSize[i], sizeof(uint32_t));
-		file.seekg(4, file.cur);
-	//	std::cout << "\noffset = " << file.tellg() << " index = " << i;
-	}
-
-	file.seekg(4);
-	file.read((char*) &TotalmembersCount, sizeof(uint32_t));
-
-	memberGroupIndex = new uint32_t[TotalmembersCount];
-	memberOffsetter = new uint32_t[TotalmembersCount];
-	memberHash = new uint64_t[TotalmembersCount];
-	memberBlockSize = new uint32_t[TotalmembersCount];
-	
-	uint32_t offset = 24 * groupCount + 16;
-	file.seekg(offset);
-	
-	for (uint32_t e = 0; e < TotalmembersCount; e++)
-	{
-		file.read((char*) &memberGroupIndex[e], sizeof(uint32_t));
-		file.read((char*) &memberOffsetter[e], sizeof(uint32_t));
-		file.read((char*) &memberHash[e], sizeof(uint64_t));
-		file.read((char*) &memberBlockSize[e], sizeof(uint32_t));
-		file.seekg(4, std::ios::cur);
-	}
-
-	file.close();
-}
-
 MGDefinition::~MGDefinition()
 {
 	delete[] defOffsets;
 }
 
-vector<MeshInfo> MGDefinition::ReadMG(std::string filename)
+vector<MeshInfo> MGDefinition::ReadMG(std::stringstream& file)
 {
 	vector<MeshInfo> meshesinfo;
-	ifstream file(filename, ios::in | ios::binary);
 	file.seekg(56);
 	file.read((char*)&defCount, sizeof(uint16_t));
 
@@ -173,8 +128,8 @@ vector<MeshInfo> MGDefinition::ReadMG(std::string filename)
 					component.primitiveType = static_cast<PrimitiveTypes>(val);
 					file.read((char*)&val, sizeof(uint8_t));
 					component.dataType = static_cast<DataTypes>(val);
-					//if(component.primitiveType == PrimitiveTypes::JOINTS0 && (component.dataType != DataTypes::BYTE_STRUCT_0 && component.dataType != DataTypes::HALFWORD_STRUCT_1)/* && component.dataType != DataTypes::HALFWORD_STRUCT_2) */ )
-						//cout << file.tellg() << "\n";
+					if(component.primitiveType == PrimitiveTypes::UNKNOWN0)/* && (component.dataType != DataTypes::BYTE_STRUCT_0 && component.dataType != DataTypes::HALFWORD_STRUCT_1) && component.dataType != DataTypes::HALFWORD_STRUCT_2) */
+						cout << file.tellg() << "\n";
 					file.read((char*)&component.elementCount, sizeof(uint8_t));
 					file.read((char*)&component.offset, sizeof(uint8_t));
 					file.read((char*)&component.bufferIndex, sizeof(uint8_t));
@@ -227,6 +182,5 @@ vector<MeshInfo> MGDefinition::ReadMG(std::string filename)
 			}
 		}
 	}
-	file.close();
 	return meshesinfo;
 }

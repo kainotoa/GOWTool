@@ -33,6 +33,9 @@
     <ClCompile Include="src\MathFunctions.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\Lodpack.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\krak.h">
@@ -61,6 +64,9 @@
       <Filter>inc</Filter>
     </ClInclude>
     <ClInclude Include="inc\Rig.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\Lodpak.h">
       <Filter>inc</Filter>
     </ClInclude>
   </ItemGroup>

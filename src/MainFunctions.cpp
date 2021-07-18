@@ -4,7 +4,7 @@
 #include "../inc/Mesh.h"
 #include "../inc/Formats.h"
 
-RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::ifstream& file, uint64_t off)
+RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::stringstream& file, uint64_t off)
 {
     RawMeshContainer Mesh;
     Mesh.VertCount = meshinfo.vertCount;

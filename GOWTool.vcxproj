@@ -131,7 +131,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>.\inc;.\src;.;glTF-SDK\GLTFSDK\inc;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\inc;.\src;.;.\glTF-SDK\GLTFSDK\inc;.\DirectXTex;</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Create</PrecompiledHeader>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
@@ -191,6 +191,9 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="DirectXTex\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
+      <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
+    </ProjectReference>
     <ProjectReference Include="glTF-SDK\GLTFSDK\GLTFSDK.vcxproj">
       <Project>{260f202c-db96-3039-9507-90f491f0df9c}</Project>
     </ProjectReference>

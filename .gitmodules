@@ -1,0 +1,3 @@
+[submodule "glTF-SDK"]
+	path = glTF-SDK
+	url = https://github.com/microsoft/glTF-SDK

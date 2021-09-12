@@ -7,12 +7,18 @@
 #include "Lodpak.h"
 #include "Wad.h"
 #include "krak.h"
+#include "Gnf.h"
 
 int main(void)
 {
     LoadLib();
-    Texpack tex(R"(E:\God.of.War.4.Latino\CUSA07408\exec\wad\orbis_le\root.texpack)");
-    tex.ExportAll(R"(E:\test)");
+    Gnf::Header header;
+    std::ifstream fs(R"(E:\test\6034574368530819.gnf)",std::ios::in | std::ios::binary);
+    fs.seekg(0, std::ios::beg);
+    fs.read((char*)&header, sizeof(header));
+    fs.close();
+    //Texpack tex(R"(E:\God.of.War.4.Latino\CUSA07408\exec\wad\orbis_le\root.texpack)");
+    //tex.ExportAll(R"(E:\test)");
     /*
     WADFile wad(R"(D:\God.of.War.4.Latino\CUSA07408\exec\wad\orbis_le\r_athena00.wad)");
     

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pch.h>
+typedef unsigned char byte;
 
 class Texpack
 {
@@ -32,7 +33,7 @@ class Texpack
 public:
 	Texpack(string);
 	bool ContainsTexture(uint64_t);
-	byte* ExportTexture(uint64_t,uint32_t&);
+	void ExportTexture(byte* output, uint64_t hash, uint32_t& expSiz);
 	void ExportAll(string dir);
 	~Texpack();
 };

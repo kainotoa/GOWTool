@@ -1,6 +1,6 @@
 #include <pch.h>
-#include <../inc/Texpack.h>
-#include <../inc/krak.h>
+#include <Texpack.h>
+#include <krak.h>
 
 Texpack::Texpack(string filename)
 {
@@ -72,7 +72,6 @@ Texpack::Texpack(string filename)
 			}
 		}
 	}
-	LoadLib();
 }
 Texpack::~Texpack()
 {
@@ -91,8 +90,10 @@ bool Texpack::ContainsTexture(uint64_t hash)
 	}
 	return false;
 }
-byte* Texpack::ExportTexture(uint64_t hash, uint32_t& expSize)
+void Texpack::ExportTexture(byte* output, uint64_t hash, uint32_t& expSize)
 {
+	if (!OodLZ_Decompress)
+		return;
 	uint32_t writeSize = 0x100;			// for gnf header
 	uint32_t writeOff = 0;
 	uint32_t texIdx = 0;
@@ -109,7 +110,7 @@ byte* Texpack::ExportTexture(uint64_t hash, uint32_t& expSize)
 		}
 	}
 
-	byte* output = new byte[writeSize];
+	output = new byte[writeSize];
 
 	uint64_t offset = 0;
 	uint32_t last = _texInfos[texIdx]._blocks.size() - 1;
@@ -153,11 +154,12 @@ byte* Texpack::ExportTexture(uint64_t hash, uint32_t& expSize)
 	}
 	delete[] gnf;
 	expSize = writeSize;
-
-	return output;
 }
 void Texpack::ExportAll(string dir)
 {
+	if (!OodLZ_Decompress)
+		return;
+
 	uint32_t texIdx = 0;
 	for (uint32_t i = 0; i < _TexsCount; i++)
 	{

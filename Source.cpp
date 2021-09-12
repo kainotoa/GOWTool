@@ -6,8 +6,14 @@
 #include "Texpack.h"
 #include "Lodpak.h"
 #include "Wad.h"
+#include "krak.h"
+
 int main(void)
 {
+    LoadLib();
+    Texpack tex(R"(E:\God.of.War.4.Latino\CUSA07408\exec\wad\orbis_le\root.texpack)");
+    tex.ExportAll(R"(E:\test)");
+    /*
     WADFile wad(R"(D:\God.of.War.4.Latino\CUSA07408\exec\wad\orbis_le\r_athena00.wad)");
     
     string lod = R"(D:\God.of.War.4.Latino\CUSA07408\exec\wad\orbis_le\root.lodpack)";
@@ -39,4 +45,5 @@ int main(void)
     Rig rig(ssss);
     WriteGLTF(std::filesystem::path(R"(D:\test.gltf)"), meshes, rig);
     cout << "";
+    */
 } 

@@ -16,7 +16,7 @@ struct RawMeshContainer
 	float** weights{ nullptr };
 	RawMeshContainer() = default;
 };
-enum PrimitiveTypes
+enum class PrimitiveTypes
 {
 	POSITION,
 	NORMALS,
@@ -36,7 +36,7 @@ enum PrimitiveTypes
 	UNKNOWN7
 };
 
-enum DataTypes
+enum class DataTypes
 {
 	FLOAT,
 	HALFWORD_STRUCT_0,

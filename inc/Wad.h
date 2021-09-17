@@ -1,13 +1,14 @@
 #pragma once
 
-struct WADFile
+struct WadFile
 {
 	vector<string> _Entries;
 	vector<uint32_t> _Offsets;
 	vector<uint32_t> _Sizes;
 	vector<uint16_t> _Groups;
-	WADFile(string);
-	bool GetBuffer(uint32_t entryIdx, std::stringstream& outstream);
+	bool Read(const std::filesystem::path& filepath);
+	bool GetBuffer(const uint32_t& entryIdx, uint8_t* output);
+	bool GetBuffer(const uint32_t& entryIdx, std::iostream& outstream);
 private:
 	ifstream fs;
 };

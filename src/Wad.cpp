@@ -1,9 +1,12 @@
 #include "pch.h"
 #include "Wad.h"
 
-WADFile::WADFile(string filename)
+bool WadFile::Read(const std::filesystem::path& filepath)
 {
-	fs.open(filename, ios::in | ios::binary);
+	if (!std::filesystem::exists(filepath))
+		return false;
+
+	fs.open(filepath.string(), ios::in | ios::binary);
 	fs.seekg(0, ios::end);
 	size_t end = fs.tellg();
 
@@ -19,10 +22,8 @@ WADFile::WADFile(string filename)
 		fs.seekg(2, ios::cur);
 		fs.read((char*)&size, sizeof(uint32_t));
 		fs.seekg(0x10, ios::cur);
-		int a = fs.tellg();
 		fs.read(name, sizeof(name));
 		fs.seekg(0x10, ios::cur);
-		a = fs.tellg();
 		if (size != 0)
 		{
 			_Entries.push_back(name);
@@ -32,23 +33,28 @@ WADFile::WADFile(string filename)
 
 			fs.seekg(size, ios::cur);
 			pad = fs.tellg();
-			if (pad % 16 != 0)
-			{
-				fs.seekg((pad / 16 + 1) * 16, ios::beg);
-			}
-			a = fs.tellg();
+			pad = (pad + 15) & (~15);
+			fs.seekg(pad, ios::beg);
 		}
 	}
+	return true;
 }
-bool WADFile::GetBuffer(uint32_t entryIdx,std::stringstream& outstream)
+bool WadFile::GetBuffer(const uint32_t& entryIdx,uint8_t* output)
 {
-	outstream.str("");
-	outstream.clear();
 	if (entryIdx >= _Entries.size())
 		return false;
-	std::unique_ptr<char[]> arr = std::make_unique<char[]>(_Sizes[entryIdx]);
+	output = new uint8_t[_Sizes[entryIdx]];
 	fs.seekg(_Offsets[entryIdx], std::ios::beg);
-	fs.read(arr.get(), _Sizes[entryIdx]);
-	outstream.write(arr.get(), _Sizes[entryIdx]);
+	fs.read((char*)output, _Sizes[entryIdx]);
+	return true;
+}
+bool WadFile::GetBuffer(const uint32_t& entryIdx, std::iostream& outstream)
+{
+	if (entryIdx >= _Entries.size())
+		return false;
+	std::unique_ptr<uint8_t[]> output = std::make_unique<uint8_t[]>(_Sizes[entryIdx]);
+	fs.seekg(_Offsets[entryIdx], std::ios::beg);
+	fs.read((char*)output.get(), _Sizes[entryIdx]);
+	outstream.write((char*)output.get(), _Sizes[entryIdx]);
 	return true;
 }

@@ -2,75 +2,44 @@
 #include <Texpack.h>
 #include <krak.h>
 
-Texpack::Texpack(string filename)
+Texpack::Texpack(const std::filesystem::path& filepath)
 {
-	fs = ifstream(filename, ios::in | ios::binary);
+	fs = ifstream(filepath.string(), ios::in | ios::binary);
 	fs.seekg(0, ios::end);
-	uint32_t end = fs.tellg();
+	size_t end = fs.tellg();
 
-	fs.seekg(32, ios::beg);
+	fs.seekg(0x20, ios::beg);
 
 	fs.read((char*)&_texSectionOff, sizeof(uint32_t));
 	fs.read((char*)&_blocksCount, sizeof(uint32_t));
 	fs.read((char*)&_blocksInfoOff, sizeof(uint32_t));
 	fs.read((char*)&_TexsCount, sizeof(uint32_t));
 
-	_blockInfos = new BlockInfo[_blocksCount];
-
-	_blockInfos[0]._blockOff = _texSectionOff;
-	fs.seekg(_blocksInfoOff, ios::beg);
-	fs.read((char*)&_blockInfos[0]._hash, sizeof(uint32_t));
-	fs.read((char*)&_blockInfos[0]._rawSize, sizeof(uint32_t));
-	fs.read((char*)&_blockInfos[0]._blockSize, sizeof(uint64_t));
-	fs.seekg(4, ios::cur);
-	fs.read((char*)&_blockInfos[0]._mipWidth, sizeof(uint16_t));
-	fs.read((char*)&_blockInfos[0]._mipHeight, sizeof(uint16_t));
-	
-	
-	fs.seekg(8, ios::cur);
-	for (uint32_t i = 1; i < _blocksCount; i++)
-	{
-		BlockInfo& info = _blockInfos[i];
-		info._blockOff = _blockInfos[i - 1]._blockOff + _blockInfos[i - 1]._blockSize;
-		fs.read((char*)&info._hash, sizeof(uint32_t));
-		fs.read((char*)&info._rawSize, sizeof(uint32_t));
-		fs.read((char*)&info._blockSize, sizeof(uint64_t));
-		fs.seekg(4, ios::cur);
-		fs.read((char*)&info._mipWidth, sizeof(uint16_t));
-		fs.read((char*)&info._mipHeight, sizeof(uint16_t));
-		fs.seekg(8, ios::cur);
-	}
-
 	_texInfos = new TexInfo[_TexsCount];
+
+	fs.seekg(0x38, ios::beg);
 	for (uint32_t i = 0; i < _TexsCount; i++)
 	{
-		fs.seekg(i*24 + 56, ios::beg);
 		TexInfo& info = _texInfos[i];
-		fs.read((char*)&info._globHash, sizeof(uint64_t));
-		fs.read((char*)&info._locHash, sizeof(uint64_t));
+		fs.read((char*)&info._fileHash, sizeof(uint64_t));
+		fs.read((char*)&info._userHash, sizeof(uint64_t));
 		fs.read((char*)&info._blockInfoOff, sizeof(uint64_t));
-		
-		uint64_t flag = 0;
-		fs.seekg(info._blockInfoOff, ios::beg);
-		while (flag != UINT64_MAX)
-		{
-			uint32_t hash = 0;
-			fs.read((char*)&hash, sizeof(uint32_t));
-			for (uint32_t i = 0; i < _blocksCount; i++)
-			{
-				if (hash == _blockInfos[i]._hash)
-				{
-					info._blocks.push_back(_blockInfos[i]);
-					break;
-				}
-			}
-			fs.seekg(20, ios::cur);
-			fs.read((char*)&flag, sizeof(uint64_t));
-			if (flag != UINT64_MAX)
-			{
-				fs.seekg(flag, ios::beg);
-			}
-		}
+	}
+
+	_blockInfos = new BlockInfo[_blocksCount];
+	_blockInfoOffsets = new uint64_t[_blocksCount];
+	fs.seekg(_blocksInfoOff, ios::beg);
+	for (uint32_t i = 0; i < _blocksCount; i++)
+	{
+		_blockInfoOffsets[i] = fs.tellg();
+		BlockInfo& info = _blockInfos[i];
+		fs.read((char*)&info._blockOff, sizeof(uint32_t));
+		fs.read((char*)&info._rawSize, sizeof(uint32_t));
+		fs.read((char*)&info._blockSize, sizeof(uint64_t));
+		fs.read((char*)&info._unk, sizeof(uint32_t));
+		fs.read((char*)&info._mipWidth, sizeof(uint16_t));
+		fs.read((char*)&info._mipHeight, sizeof(uint16_t));
+		fs.read((char*)&info._nextSiblingBlockInfoOff, sizeof(uint64_t));
 	}
 }
 Texpack::~Texpack()
@@ -79,147 +48,120 @@ Texpack::~Texpack()
 	delete[] _blockInfos;
 	delete[] _texInfos;
 }
-bool Texpack::ContainsTexture(uint64_t hash)
+bool Texpack::ContainsTexture(const uint64_t& hash)
 {
-	for (int i = 0; i < _TexsCount; i++)
+	for (uint32_t i = 0; i < _TexsCount; i++)
 	{
-		if (_texInfos[i]._globHash == hash)
+		if (_texInfos[i]._fileHash == hash)
 		{
 			return true;
 		}
 	}
 	return false;
 }
-void Texpack::ExportTexture(byte* output, uint64_t hash, uint32_t& expSize)
+bool Texpack::ExportGnf(byte* &output, const uint64_t& hash, uint32_t& expSize)
 {
 	if (!OodLZ_Decompress)
-		return;
-	uint32_t writeSize = 0x100;			// for gnf header
-	uint32_t writeOff = 0;
-	uint32_t texIdx = 0;
+		return false;
+
+	TexInfo* texInfo = nullptr;
 	for (uint32_t i = 0; i < _TexsCount; i++)
 	{
-		if (_texInfos[i]._globHash == hash)
+		if (_texInfos[i]._fileHash == hash)
 		{
-			texIdx = i;
-			for (int e = 0; e < _texInfos[i]._blocks.size(); e++)
-			{
-				writeSize += _texInfos[i]._blocks[e]._rawSize;
-			}
+			texInfo = &_texInfos[i];
 			break;
 		}
 	}
+	if (texInfo == nullptr)
+		return false;
 
+	std::vector<BlockInfo*> texblockInfos;
+
+	for (uint32_t i = 0; i < _blocksCount; i++)
+	{
+		if (texInfo->_blockInfoOff == _blockInfoOffsets[i])
+		{
+			texblockInfos.push_back(&_blockInfos[i]);
+			break;
+		}
+	}
+	if (texblockInfos.size() < 1)
+		return false;
+	while (texblockInfos.front()->_nextSiblingBlockInfoOff != -1LL)
+	{
+		for (uint32_t i = 0; i < _blocksCount; i++)
+		{
+			if (texblockInfos.front()->_nextSiblingBlockInfoOff == _blockInfoOffsets[i])
+			{
+				texblockInfos.insert(texblockInfos.begin(), &_blockInfos[i]);
+				break;
+			}
+		}
+	}
+	uint32_t writeSize = 0x100; //gnf Header
+	for (uint32_t i = 0; i < texblockInfos.size(); i++)
+	{
+		writeSize += texblockInfos[i]->_rawSize;
+	}
 	output = new byte[writeSize];
 
-	uint64_t offset = 0;
-	uint32_t last = _texInfos[texIdx]._blocks.size() - 1;
-
-	offset = _texInfos[texIdx]._blocks[last]._blockOff;
-	byte* gnf = new byte[0x100];
-	fs.seekg(offset + 0x10, ios::beg);
-	fs.read((char*)gnf, 0x100);
-
-	memmove(output + writeOff, gnf, 0x100);
-	writeOff += 0x100;
-
-	for (int e = _texInfos[texIdx]._blocks.size() - 1; e >= 0; e--)
+	uint32_t writeOff = 0;
+	for (uint32_t i = 0; i < texblockInfos.size(); i++)
 	{
-		offset = _texInfos[texIdx]._blocks[e]._blockOff;
-
-		uint64_t rawSize = _texInfos[texIdx]._blocks[e]._rawSize;
-		byte* outbytes = new byte[rawSize + SAFE_SPACE];
-
+		fs.seekg((size_t(texblockInfos[i]->_blockOff) << 4) + 4,std::ios::beg);
 		uint32_t off = 0;
-		fs.seekg(offset + 4, ios::beg);
+		uint32_t len = 0;
 		fs.read((char*)&off, sizeof(uint32_t));
-
-		uint32_t Size = _texInfos[texIdx]._blocks[e]._blockSize - off;
-
-		byte* inbytes = new byte[Size];
-		fs.seekg(offset + off, ios::beg);
-		fs.read((char*)inbytes, Size);
-
-		uint32_t status = OodLZ_Decompress(inbytes, Size, outbytes, rawSize, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-		/*
-		if (status == rawSize)
-			cout << " Good";
-		else
-			cout << " bad";
-		*/
-		memmove(output + writeOff, outbytes, rawSize);
-		writeOff += rawSize;
-		delete[] inbytes;
-		delete[] outbytes;
+		fs.read((char*)&len, sizeof(uint32_t));
+		fs.seekg(4, std::ios::cur);
+		if (off != 0x1CU)
+		{
+			fs.read((char*)(output + writeOff), 0x100);
+			writeOff += 0x100;
+			fs.seekg(4, std::ios::cur);
+		}
+		uint32_t decSize = 0;
+		fs.read((char*)&decSize, sizeof(uint32_t));
+		fs.seekg(8, std::ios::cur);
+		byte* readbytes = new byte[len - off];
+		byte* writebytes = new byte[decSize];
+		fs.read((char*)readbytes, (len - off));
+		uint32_t status = OodLZ_Decompress(readbytes, len - off, writebytes, decSize, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+		if (status != decSize)
+		{
+			throw std::exception("Decompression Failed!");
+		}
+		memmove(output + writeOff, writebytes, decSize);
+		delete[] readbytes;
+		delete[] writebytes;
+		writeOff += decSize;
 	}
-	delete[] gnf;
 	expSize = writeSize;
+	return true;
 }
-void Texpack::ExportAll(string dir)
+bool Texpack::ExportGnf(const std::filesystem::path& dir, const uint64_t& hash)
 {
-	if (!OodLZ_Decompress)
-		return;
+	if (!std::filesystem::exists(dir))
+		return false;
+	byte* output = nullptr;
+	uint32_t size = 0;
+	bool result = ExportGnf(output, hash, size);
+	if (!result)
+		return false;
 
-	uint32_t texIdx = 0;
+	std::filesystem::path outpath = dir / (std::to_string(hash) + ".gnf");
+	std::ofstream fs(outpath.string(), ios::binary | ios::out);
+	fs.write((char*)output, size);
+	delete[] output;
+	fs.close();
+	return true;
+}
+bool Texpack::ExportAllGnf(const std::filesystem::path& dir)
+{
 	for (uint32_t i = 0; i < _TexsCount; i++)
 	{
-		texIdx = i;
-		uint32_t writeSize = 0x100;			// for gnf header
-		uint32_t writeOff = 0;
-		for (int e = 0; e < _texInfos[texIdx]._blocks.size(); e++)
-		{
-			writeSize += _texInfos[texIdx]._blocks[e]._rawSize;
-		}
-
-		byte* output = new byte[writeSize];
-
-		uint64_t offset = 0;
-		uint32_t last = _texInfos[texIdx]._blocks.size() - 1;
-
-		offset = _texInfos[texIdx]._blocks[last]._blockOff;
-		byte* gnf = new byte[0x100];
-		fs.seekg(offset + 0x10, ios::beg);
-		fs.read((char*)gnf, 0x100);
-
-		memmove(output + writeOff, gnf, 0x100);
-		writeOff += 0x100;
-
-		for (int e = _texInfos[texIdx]._blocks.size() - 1; e >= 0; e--)
-		{
-			offset = _texInfos[texIdx]._blocks[e]._blockOff;
-
-			uint64_t rawSize = _texInfos[texIdx]._blocks[e]._rawSize;
-			byte* outbytes = new byte[rawSize + SAFE_SPACE];
-
-			uint32_t off = 0;
-			fs.seekg(offset + 4, ios::beg);
-			fs.read((char*)&off, sizeof(uint32_t));
-
-			uint32_t Size = _texInfos[texIdx]._blocks[e]._blockSize - off;
-
-			byte* inbytes = new byte[Size];
-			fs.seekg(offset + off, ios::beg);
-			fs.read((char*)inbytes, Size);
-
-			uint32_t status = OodLZ_Decompress(inbytes, Size, outbytes, rawSize, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-			/*
-			if (status == rawSize)
-				cout << " Good";
-			else
-				cout << " bad";
-			*/
-			memmove(output + writeOff, outbytes, rawSize);
-			writeOff += rawSize;
-			delete[] inbytes;
-			delete[] outbytes;
-		}
-		delete[] gnf;
-
-		string f = dir + "\\" + std::to_string(_texInfos[i]._globHash) + ".gnf";
-		ofstream fs = ofstream(f, ios::out | ios::binary);
-
-		fs.write((char*)output, writeSize);
-		fs.close();
-		delete[] output;
+		ExportGnf(dir, _texInfos[i]._fileHash);
 	}
+	return true;
 }

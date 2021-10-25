@@ -8,15 +8,25 @@
 #include "Wad.h"
 #include "krak.h"
 #include "Gnf.h"
+#include <chrono>
 
 int main(void)
 {
     LoadLib();
+    auto y =  std::chrono::high_resolution_clock::now();
+    std::filesystem::path p(R"(E:\God.of.War.4.Latino\CUSA07408\exec\wad\orbis_le\root.texpack)");
+    Texpack tex(p);
+    tex.ExportAllGnf(std::filesystem::path(R"(D:\new test\)"));
+    auto z = std::chrono::high_resolution_clock::now();
+    auto res = std::chrono::duration_cast<std::chrono::seconds>(z - y);
+    cout << res.count();
+    /*
     Gnf::Header header;
     std::ifstream fs(R"(E:\test\6034574368530819.gnf)",std::ios::in | std::ios::binary);
     fs.seekg(0, std::ios::beg);
     fs.read((char*)&header, sizeof(header));
     fs.close();
+    */
     //Texpack tex(R"(E:\God.of.War.4.Latino\CUSA07408\exec\wad\orbis_le\root.texpack)");
     //tex.ExportAll(R"(E:\test)");
     /*

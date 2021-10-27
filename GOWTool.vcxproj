@@ -120,13 +120,17 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalIncludeDirectories>.\inc;.\src;.;.\glTF-SDK\GLTFSDK\inc;.\DirectXTex;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -150,17 +154,20 @@
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="src\Formats.cpp" />
     <ClCompile Include="src\glTFSerializer.cpp" />
+    <ClCompile Include="src\Gnf.cpp" />
     <ClCompile Include="src\krak.cpp" />
     <ClCompile Include="src\Lodpack.cpp" />
     <ClCompile Include="src\MainFunctions.cpp" />
     <ClCompile Include="src\MathFunctions.cpp" />
     <ClCompile Include="src\Rig.cpp" />
     <ClCompile Include="src\Texpack.cpp" />
+    <ClCompile Include="src\utils.cpp" />
     <ClCompile Include="src\Wad.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\Formats.h" />
     <ClInclude Include="inc\glTFSerializer.h" />
+    <ClInclude Include="inc\Gnf.h" />
     <ClInclude Include="inc\krak.h" />
     <ClInclude Include="inc\Lodpak.h" />
     <ClInclude Include="inc\MainFunctions.h" />
@@ -169,6 +176,7 @@
     <ClInclude Include="inc\Rig.h" />
     <ClInclude Include="inc\streams.h" />
     <ClInclude Include="inc\Texpack.h" />
+    <ClInclude Include="inc\utils.h" />
     <ClInclude Include="inc\Wad.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

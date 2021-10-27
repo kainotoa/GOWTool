@@ -43,6 +43,12 @@
     <ClCompile Include="src\krak.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Gnf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\Formats.h">
@@ -79,5 +85,11 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="inc\Gnf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

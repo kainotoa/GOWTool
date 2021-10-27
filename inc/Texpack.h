@@ -5,35 +5,38 @@ typedef unsigned char byte;
 
 class Texpack
 {
-	uint32_t _texSectionOff;
-	uint32_t _blocksCount;
-	uint32_t _blocksInfoOff;
-	uint32_t _TexsCount;
+	uint32_t _texSectionOff {0};
+	uint32_t _blocksCount{ 0 };
+	uint32_t _blocksInfoOff{ 0 };
+	uint32_t _TexsCount{ 0 };
 
-	struct BlockInfo
-	{
-		uint32_t _hash;
-		uint64_t _blockOff;
-		uint32_t _rawSize;
-		uint64_t _blockSize;
-		uint16_t _mipWidth;
-		uint16_t _mipHeight;
-	};
-	BlockInfo* _blockInfos;
 	struct TexInfo
 	{
-		uint64_t _globHash;
-		uint64_t _locHash;
+		uint64_t _fileHash;
+		uint64_t _userHash;
 		uint64_t _blockInfoOff;
-		vector<BlockInfo> _blocks;
 	};
-	TexInfo* _texInfos;
 
+	TexInfo* _texInfos {nullptr};
+	struct BlockInfo
+	{
+		uint32_t _blockOff;
+		uint32_t _rawSize;
+		uint64_t _blockSize;
+		uint32_t _unk;
+		uint16_t _mipWidth;
+		uint16_t _mipHeight;
+		uint64_t _nextSiblingBlockInfoOff;
+	};
+	BlockInfo* _blockInfos{ nullptr };
+
+	uint64_t* _blockInfoOffsets{ nullptr };
 	ifstream fs;
 public:
-	Texpack(string);
-	bool ContainsTexture(uint64_t);
-	void ExportTexture(byte* output, uint64_t hash, uint32_t& expSiz);
-	void ExportAll(string dir);
+	Texpack(const std::filesystem::path &filepath);
+	bool ContainsTexture(const uint64_t &hash);
+	bool ExportGnf(byte* &output,const uint64_t& hash, uint32_t& expSiz);
+	bool ExportGnf(const std::filesystem::path& dir,const uint64_t& hash,std::string name = "");
+	bool ExportAllGnf(const std::filesystem::path& dir);
 	~Texpack();
 };

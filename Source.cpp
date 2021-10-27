@@ -60,7 +60,7 @@ bool ExportAllSkinnedMesh(WadFile& wad, vector<Lodpack*>& lodpacks,const std::fi
             wad.GetBuffer(i, meshDefStream);
             for (int j = 0; j < wad._FileEntries.size(); j++)
             {
-                if (wad._FileEntries[j].type == WadFile::FileType::SkinnedMeshBuff && wad._FileEntries[j].name.contains(wad._FileEntries[i].name))
+                if (wad._FileEntries[j].type == WadFile::FileType::SkinnedMeshBuff && (wad._FileEntries[j].name.find(wad._FileEntries[i].name) != std::string::npos))
                 {
                     wad.GetBuffer(j, meshBuffStream);
                     break;
@@ -68,7 +68,7 @@ bool ExportAllSkinnedMesh(WadFile& wad, vector<Lodpack*>& lodpacks,const std::fi
             }
             for (int j = 0; j < wad._FileEntries.size(); j++)
             {
-                if (wad._FileEntries[j].type == WadFile::FileType::Rig && wad._FileEntries[j].name.contains("Proto"))
+                if (wad._FileEntries[j].type == WadFile::FileType::Rig && (wad._FileEntries[j].name.find("Proto") != std::string::npos))
                 {
                     std::string sample = str_tolower(wad._FileEntries[j].name.substr(7, wad._FileEntries[j].name.length() - 7));
                     if (sample == name)

@@ -127,6 +127,10 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -157,6 +161,7 @@
     <ClCompile Include="src\MathFunctions.cpp" />
     <ClCompile Include="src\Rig.cpp" />
     <ClCompile Include="src\Texpack.cpp" />
+    <ClCompile Include="src\utils.cpp" />
     <ClCompile Include="src\Wad.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -171,6 +176,7 @@
     <ClInclude Include="inc\Rig.h" />
     <ClInclude Include="inc\streams.h" />
     <ClInclude Include="inc\Texpack.h" />
+    <ClInclude Include="inc\utils.h" />
     <ClInclude Include="inc\Wad.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

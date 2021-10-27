@@ -140,7 +140,7 @@ bool Texpack::ExportGnf(byte* &output, const uint64_t& hash, uint32_t& expSize)
 	expSize = writeSize;
 	return true;
 }
-bool Texpack::ExportGnf(const std::filesystem::path& dir, const uint64_t& hash)
+bool Texpack::ExportGnf(const std::filesystem::path& dir, const uint64_t& hash, std::string name)
 {
 	if (!std::filesystem::exists(dir))
 		return false;
@@ -150,7 +150,15 @@ bool Texpack::ExportGnf(const std::filesystem::path& dir, const uint64_t& hash)
 	if (!result)
 		return false;
 
-	std::filesystem::path outpath = dir / (std::to_string(hash) + ".gnf");
+	std::filesystem::path outpath = dir;
+	if (name.empty())
+	{
+		outpath /= (std::to_string(hash) + ".gnf");
+	}
+	else
+	{
+		outpath /= (name + ".gnf");
+	}
 	std::ofstream fs(outpath.string(), ios::binary | ios::out);
 	fs.write((char*)output, size);
 	delete[] output;

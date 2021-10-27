@@ -36,7 +36,7 @@ public:
 	Texpack(const std::filesystem::path &filepath);
 	bool ContainsTexture(const uint64_t &hash);
 	bool ExportGnf(byte* &output,const uint64_t& hash, uint32_t& expSiz);
-	bool ExportGnf(const std::filesystem::path& dir,const uint64_t& hash);
+	bool ExportGnf(const std::filesystem::path& dir,const uint64_t& hash,std::string name = "");
 	bool ExportAllGnf(const std::filesystem::path& dir);
 	~Texpack();
 };

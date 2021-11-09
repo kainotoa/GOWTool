@@ -43,6 +43,22 @@ bool ExportAllTextures(WadFile& wad, vector<Texpack*>& texpacks, const std::file
     }
     return true;
 }
+bool ExtractAllFiles(WadFile& wad, const std::filesystem::path& outdir)
+{
+    if (wad._FileEntries.size() < 1)
+        return false;
+    if (!std::filesystem::exists(outdir))
+        return false;
+    for (int i = 0; i < wad._FileEntries.size(); i++)
+    {
+        std::filesystem::path outfile = outdir / (wad._FileEntries[i].name + "." + std::to_string(i) + ".bin");
+        std::fstream fs;
+        fs.open(outfile.string(), ios::binary | ios::out);
+        wad.GetBuffer(i, fs);
+        fs.close();
+    }
+    return true;
+}
 bool ExportAllSkinnedMesh(WadFile& wad, vector<Lodpack*>& lodpacks,const std::filesystem::path& outdir)
 {
     if (wad._FileEntries.size() < 1 || lodpacks.size() < 1)
@@ -84,15 +100,18 @@ bool ExportAllSkinnedMesh(WadFile& wad, vector<Lodpack*>& lodpacks,const std::fi
             Rig rig(rigStream);
 
             vector<RawMeshContainer> meshes;
-            for (size_t j = 0; j < meshInfos.size(); j++)
+            for (int j = 0; j < meshInfos.size(); j++)
             {
+                char buf[10];
+                sprintf_s(buf, "%04d", j);
+                string name = "submesh_" + string(buf) + "_" + std::to_string(meshInfos[j].LODlvl);
                 if (meshInfos[j].LODlvl > 0)
                     continue;
                 if (meshInfos[j].Hash == 0)
                 {
                     if (meshBuffStream.tellp() != std::streampos(0))
                     {
-                        meshes.push_back(containRawMesh(meshInfos[j], meshBuffStream));
+                        meshes.push_back(containRawMesh(meshInfos[j], meshBuffStream, name));
                     }
                 }
                 else
@@ -105,7 +124,7 @@ bool ExportAllSkinnedMesh(WadFile& wad, vector<Lodpack*>& lodpacks,const std::fi
                     }
                     if (buffer.tellp() != std::streampos(0))
                     {
-                        meshes.push_back(containRawMesh(meshInfos[j], buffer));
+                        meshes.push_back(containRawMesh(meshInfos[j], buffer, name));
                     }
                 }
             }
@@ -143,9 +162,6 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    //oodle loadlib
-    LoadLib();
-
     CHAR charbuffer[260] = { 0 };
     GetCurrentDirectoryA(sizeof(charbuffer), charbuffer);
     std::filesystem::path configpath = std::filesystem::path(charbuffer) / "config.ini";
@@ -171,6 +187,7 @@ int main(int argc, char* argv[])
             cout << "\nOptions:\n";
             cout << "  -p, --path <path>        Input path to .wad file.\n";
             cout << "  -o, --outpath <outpath>  Output directory.\n";
+            cout << "  -e, --extract            Extract all files from .wad.\n";
             cout << "  -m, --mesh               Export all meshes from .wad.\n";
             cout << "  -t, --texture            Export all textures from .wad.\n";
             cout << "  -h, --help               Show help and usage information.\n";
@@ -185,6 +202,7 @@ int main(int argc, char* argv[])
         std::filesystem::path outdir;
         bool mesh = false;
         bool texture = false;
+        bool extract = false;
         for (int i = 2; i < argc; i++)
         {
             std::string op(argv[i]);
@@ -221,6 +239,10 @@ int main(int argc, char* argv[])
                     return -1;
                 }
             }
+            else if (op == "-e" || op == "--extract")
+            {
+                extract = true;
+            }
             else if (op == "-m" || op == "--mesh")
             {
                 mesh = true;
@@ -236,7 +258,7 @@ int main(int argc, char* argv[])
                 return -1;
             }
         }
-        if (!mesh && !texture)
+        if (!mesh && !texture && !extract)
         {
             Utils::Logger::Error("\nExport file type option not specified");
             LogHelp();
@@ -267,6 +289,17 @@ int main(int argc, char* argv[])
         }
         WadFile wad;
         wad.Read(path);
+        if (extract)
+        {
+            if (ExtractAllFiles(wad, outdir))
+            {
+                Utils::Logger::Success(("\nSuccessfully extracted all files to: " + outdir.string()).c_str());
+            }
+            else
+            {
+                Utils::Logger::Error("\nMeshes export Failed.");
+            }
+        }
         if (mesh)
         {
             std::filesystem::recursive_directory_iterator dir(gamedir);
@@ -295,6 +328,8 @@ int main(int argc, char* argv[])
         }
         if (texture)
         {
+            //oodle loadlib
+            LoadLib();
             if (!OodLZ_Decompress)
             {
                 if (_M_X64)
@@ -413,6 +448,8 @@ int main(int argc, char* argv[])
             LogHelp();
             return -1;
         }
+        //oodle loadlib
+        LoadLib();
         if (!OodLZ_Decompress)
         {
             if (_M_X64)

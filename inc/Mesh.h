@@ -14,6 +14,7 @@ struct RawMeshContainer
 	uint16_t* indices{ nullptr };
 	uint16_t** joints{ nullptr };
 	float** weights{ nullptr };
+	std::string name;
 	RawMeshContainer() = default;
 };
 enum class PrimitiveTypes

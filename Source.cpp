@@ -35,7 +35,7 @@ bool ExportAllTextures(WadFile& wad, vector<Texpack*>& texpacks, const std::file
             {
                 if (texpacks[j]->ContainsTexture(hash))
                 {
-                    texpacks[j]->ExportGnf(outdir, hash,name);
+                    texpacks[j]->ExportGnf(outdir, hash, wad._FileEntries[i].name);
                     break;
                 }
             }
@@ -65,6 +65,7 @@ bool ExportAllSkinnedMesh(WadFile& wad, vector<Lodpack*>& lodpacks,const std::fi
         return false;
     if (!std::filesystem::exists(outdir))
         return false;
+    vector<int> usedMeshBufferIndices;
     for (int i = 0; i < wad._FileEntries.size(); i++)
     {
         if (wad._FileEntries[i].type == WadFile::FileType::SkinnedMeshDef)
@@ -78,7 +79,10 @@ bool ExportAllSkinnedMesh(WadFile& wad, vector<Lodpack*>& lodpacks,const std::fi
             {
                 if (wad._FileEntries[j].type == WadFile::FileType::SkinnedMeshBuff && (wad._FileEntries[j].name.find(wad._FileEntries[i].name) != std::string::npos))
                 {
+                    if (std::find(usedMeshBufferIndices.begin(), usedMeshBufferIndices.end(), j) != usedMeshBufferIndices.end())
+                        continue;
                     wad.GetBuffer(j, meshBuffStream);
+                    usedMeshBufferIndices.push_back(j);
                     break;
                 }
             }
@@ -104,14 +108,14 @@ bool ExportAllSkinnedMesh(WadFile& wad, vector<Lodpack*>& lodpacks,const std::fi
             {
                 char buf[10];
                 sprintf_s(buf, "%04d", j);
-                string name = "submesh_" + string(buf) + "_" + std::to_string(meshInfos[j].LODlvl);
+                string subname = "submesh_" + string(buf) + "_" + std::to_string(meshInfos[j].LODlvl);
                 if (meshInfos[j].LODlvl > 0)
                     continue;
                 if (meshInfos[j].Hash == 0)
                 {
                     if (meshBuffStream.tellp() != std::streampos(0))
                     {
-                        meshes.push_back(containRawMesh(meshInfos[j], meshBuffStream, name));
+                        meshes.push_back(containRawMesh(meshInfos[j], meshBuffStream, subname));
                     }
                 }
                 else
@@ -124,11 +128,74 @@ bool ExportAllSkinnedMesh(WadFile& wad, vector<Lodpack*>& lodpacks,const std::fi
                     }
                     if (buffer.tellp() != std::streampos(0))
                     {
-                        meshes.push_back(containRawMesh(meshInfos[j], buffer, name));
+                        meshes.push_back(containRawMesh(meshInfos[j], buffer, subname));
                     }
                 }
             }
-            std::filesystem::path outfile = outdir / (name + ".glb");
+            std::filesystem::path outfile = outdir / (wad._FileEntries[i].name + "." + std::to_string(i) + ".glb");
+            WriteGLTF(outfile, meshes, rig);
+        }
+    }
+    return true;
+}
+bool ExportAllRigidMesh(WadFile& wad, vector<Lodpack*>& lodpacks, const std::filesystem::path& outdir)
+{
+    if (wad._FileEntries.size() < 1 || lodpacks.size() < 1)
+        return false;
+    if (!std::filesystem::exists(outdir))
+        return false;
+    vector<int> usedMeshBufferIndices;
+    for (int i = 0; i < wad._FileEntries.size(); i++)
+    {
+        if (wad._FileEntries[i].type == WadFile::FileType::RigidMeshDefData && (wad._FileEntries[i].name.find("smsh_data") != std::string::npos))
+        {
+            std::string name = wad._FileEntries[i].name.substr(0, wad._FileEntries[i].name.length() - 10);
+            std::stringstream meshDefStream;
+            wad.GetBuffer(i, meshDefStream);
+            SmshDefinition smshDef;
+            auto meshInfos = smshDef.ReadSmsh(meshDefStream);
+
+            std::stringstream meshBuffStream;
+            for (int j = 0; j < wad._FileEntries.size(); j++)
+            {
+                if (wad._FileEntries[j].type == WadFile::FileType::SkinnedMeshBuff && (wad._FileEntries[j].name.find(name) != std::string::npos))
+                {
+                    if (std::find(usedMeshBufferIndices.begin(), usedMeshBufferIndices.end(), j) != usedMeshBufferIndices.end())
+                        continue;
+                    wad.GetBuffer(j, meshBuffStream);
+                    usedMeshBufferIndices.push_back(j);
+                    break;
+                }
+            }
+            Rig rig;
+
+            vector<RawMeshContainer> meshes;
+            for (int j = 0; j < meshInfos.size(); j++)
+            {
+                char buf[10];
+                sprintf_s(buf, "%04d", j);
+                string subname = "submesh_" + string(buf) + "_" + std::to_string(meshInfos[j].LODlvl);
+                if (meshInfos[j].LODlvl > 0)
+                    continue;
+                if (meshInfos[j].Hash == 0)
+                {
+                    meshes.push_back(containRawMesh(meshInfos[j], meshBuffStream, subname));
+                }
+                else
+                {
+                    std::stringstream buffer;
+                    for (int k = 0; k < lodpacks.size(); k++)
+                    {
+                        if (lodpacks[k]->GetBuffer(meshInfos[j].Hash, buffer))
+                            break;
+                    }
+                    if (buffer.tellp() != std::streampos(0))
+                    {
+                        meshes.push_back(containRawMesh(meshInfos[j], buffer, subname));
+                    }
+                }
+            }
+            std::filesystem::path outfile = outdir / (wad._FileEntries[i].name + "." + std::to_string(i) + ".glb");
             WriteGLTF(outfile, meshes, rig);
         }
     }
@@ -317,7 +384,7 @@ int main(int argc, char* argv[])
                 Utils::Logger::Error("\nspecified gamedir(including sub-directories) doesn't contain any .lodpack files, export failed");
                 return -1;
             }
-            if (ExportAllSkinnedMesh(wad, lodpacks, outdir))
+            if (ExportAllSkinnedMesh(wad, lodpacks, outdir) && ExportAllRigidMesh(wad, lodpacks, outdir))
             {
                 Utils::Logger::Success(("\nSuccessfully exported all meshes to: " + outdir.string()).c_str());
             }

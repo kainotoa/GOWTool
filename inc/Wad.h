@@ -5,6 +5,7 @@ struct WadFile
 	enum class FileType : uint16_t
 	{
 		None = 0x0,
+		RigidMeshDefData = 0xB,
 		Rig = 0x3D,
 		SkinnedMeshDef = 0x98,
 		Texture = 0x80A1,

@@ -9,3 +9,8 @@ public:
 	vector<MeshInfo> ReadMG(std::stringstream& file);
 	~MGDefinition();
 };
+class SmshDefinition
+{
+public:
+	vector<MeshInfo> ReadSmsh(std::iostream& file);
+};

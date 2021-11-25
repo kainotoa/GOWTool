@@ -186,17 +186,24 @@ vector<MeshInfo> MGDefinition::ReadMG(std::stringstream& file)
 }
 vector<MeshInfo> SmshDefinition::ReadSmsh(std::iostream& file)
 {
+	uint32_t groupDataOffset = 0;
 	uint32_t meshDefSectionOff = 0;
 	uint32_t meshDefCnt = 0;
+	file.seekg(0x48, ios::beg);
+	file.read((char*)&groupDataOffset, sizeof(uint32_t));
+	groupDataOffset += 0x48;
 	file.seekg(0x58, ios::beg);
 	file.read((char*)&meshDefSectionOff, sizeof(uint32_t));
 	file.read((char*)&meshDefCnt, sizeof(uint32_t));
 	meshDefSectionOff += 0x58;
 
+
+	uint64_t currHash = UINT64_MAX;
+	uint16_t curGroup = UINT16_MAX;
+	uint16_t curLod = 0;
 	vector<MeshInfo> meshinfos;
 	for (uint32_t i = 0; i < meshDefCnt; i++)
 	{
-
 		file.seekg(meshDefSectionOff + i * 4, ios::beg);
 		uint32_t off = 0;
 		file.read((char*)&off, sizeof(uint32_t));
@@ -219,7 +226,6 @@ vector<MeshInfo> SmshDefinition::ReadSmsh(std::iostream& file)
 		MeshInfo info;
 		info.meshScale = scale;
 		info.meshMin = min;
-		info.LODlvl = 0;
 		info.boneAssociated = 0;
 
 		file.seekg(meshDefSectionOff + off + 0x30, ios::beg);
@@ -313,6 +319,24 @@ vector<MeshInfo> SmshDefinition::ReadSmsh(std::iostream& file)
 			uint32_t bufferOff = 0;
 			file.read((char*)&bufferOff, sizeof(uint32_t));
 			info.bufferOffset.push_back(bufferOff);
+		}
+
+		file.seekg(groupDataOffset + i * 2, ios::beg);
+		uint16_t group = 0;
+		file.read((char*)&group, sizeof(uint16_t));
+		if (curGroup == group && currHash != info.Hash)
+		{
+			++curLod;
+		}
+		if (curGroup != group)
+		{
+			curGroup = group;
+			curLod = 0;
+		}
+		info.LODlvl = curLod;
+		if (currHash != info.Hash)
+		{
+			currHash = info.Hash;
 		}
 
 		meshinfos.push_back(info);

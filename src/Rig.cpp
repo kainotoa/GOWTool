@@ -13,7 +13,10 @@ Rig::Rig(std::stringstream& fs)
 	}
 
 	boneNames = new string[boneCount];
-	uint32_t boneNamesOffset = boneCount * 8 + 0x28;
+	uint32_t boneNamesOffset = 0;
+	fs.seekg(0x18, std::ios::beg);
+	fs.read((char*)&boneNamesOffset, sizeof(uint32_t));
+	boneNamesOffset -= boneCount * 0x38;
 	char name[56];
 	for (uint16_t i = 0; i < boneCount; i++)
 	{

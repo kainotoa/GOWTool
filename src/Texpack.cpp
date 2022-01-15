@@ -61,9 +61,6 @@ bool Texpack::ContainsTexture(const uint64_t& hash)
 }
 bool Texpack::ExportGnf(byte* &output, const uint64_t& hash, uint32_t& expSize)
 {
-	if (!OodLZ_Decompress)
-		return false;
-
 	TexInfo* texInfo = nullptr;
 	for (uint32_t i = 0; i < _TexsCount; i++)
 	{
@@ -115,26 +112,20 @@ bool Texpack::ExportGnf(byte* &output, const uint64_t& hash, uint32_t& expSize)
 		fs.read((char*)&off, sizeof(uint32_t));
 		fs.read((char*)&len, sizeof(uint32_t));
 		fs.seekg(4, std::ios::cur);
-		if (off != 0x1CU)
+		if (off != 0x20)
 		{
 			fs.read((char*)(output + writeOff), 0x100);
 			writeOff += 0x100;
 			fs.seekg(4, std::ios::cur);
 		}
+
+		fs.seekg(8, std::ios::cur);
 		uint32_t decSize = 0;
 		fs.read((char*)&decSize, sizeof(uint32_t));
-		fs.seekg(8, std::ios::cur);
-		byte* readbytes = new byte[len - off];
-		byte* writebytes = new byte[decSize];
-		fs.read((char*)readbytes, (len - off));
-		uint32_t status = OodLZ_Decompress(readbytes, len - off, writebytes, decSize, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-		if (status != decSize)
-		{
-			throw std::exception("Decompression Failed!");
-		}
-		memmove(output + writeOff, writebytes, decSize);
-		delete[] readbytes;
-		delete[] writebytes;
+
+		fs.seekg(4, std::ios::cur);
+		fs.read((char*)(output + writeOff), decSize);
+
 		writeOff += decSize;
 	}
 	expSize = writeSize;

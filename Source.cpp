@@ -395,20 +395,6 @@ int main(int argc, char* argv[])
         }
         if (texture)
         {
-            //oodle loadlib
-            LoadLib();
-            if (!OodLZ_Decompress)
-            {
-                if (_M_X64)
-                {
-                    Utils::Logger::Error("\nUnable to load oo2core_7_win64.dll");
-                }
-                else
-                {
-                    Utils::Logger::Error("\nUnable to load oo2core_7_win32.dll");
-                }
-                return -1;
-            }
             std::filesystem::recursive_directory_iterator dir(gamedir);
             std::vector<Texpack*> texpacks;
             for (const std::filesystem::directory_entry& entry : dir)
@@ -515,20 +501,7 @@ int main(int argc, char* argv[])
             LogHelp();
             return -1;
         }
-        //oodle loadlib
-        LoadLib();
-        if (!OodLZ_Decompress)
-        {
-            if (_M_X64)
-            {
-                Utils::Logger::Error("\nUnable to load oo2core_7_win64.dll");
-            }
-            else
-            {
-                Utils::Logger::Error("\nUnable to load oo2core_7_win32.dll");
-            }
-            return -1;
-        }
+
         Texpack pack = Texpack(path.string());
         if (pack.ExportAllGnf(outdir))
         {

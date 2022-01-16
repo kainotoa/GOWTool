@@ -3,6 +3,8 @@ A TOOL FOR EXTRACTING GOD OF WAR 2018 ASSETS
 a new opensource updated, enhanced more intuitive and easy to use tool with more features compared to the existing gow tool:
 https://forum.xentax.com/viewtopic.php?f=16&t=22897
 
+[Join Community Discord Server](https://discord.gg/ZrE2hwvE6y)
+
 Build Instructions:
 1. Clone the repo recursively (git clone "github.com/HitmanHimself/GOWTool" --recursive)
 2. Building the project requires Visual Studio 2022.

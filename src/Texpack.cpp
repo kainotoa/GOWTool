@@ -150,6 +150,7 @@ bool Texpack::ExportGnf(const std::filesystem::path& dir, const uint64_t& hash, 
 	{
 		outpath /= (name + ".gnf");
 	}
+
 	std::ofstream fs(outpath.string(), ios::binary | ios::out);
 	fs.write((char*)output, size);
 	delete[] output;

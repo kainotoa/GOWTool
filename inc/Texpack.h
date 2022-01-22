@@ -1,7 +1,6 @@
 #pragma once
 
-#include <pch.h>
-typedef unsigned char byte;
+#include "pch.h"
 
 class Texpack
 {

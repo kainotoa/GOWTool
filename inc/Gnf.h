@@ -1,11 +1,9 @@
 #pragma once
-#include <pch.h>
-
-typedef unsigned char byte;
+#include "pch.h"
 
 namespace Gnf
 {
-    enum Format : uint32_t
+    enum class Format : uint32_t
     {
         FormatInvalid = 0x0,
         Format8 = 0x1,
@@ -72,7 +70,7 @@ namespace Gnf
         Format32_AS_8_8 = 0x3e,
         Format32_AS_32_32_32_32 = 0x3f
     };
-    enum FormatType : uint32_t
+    enum class FormatType : uint32_t
     {
         FormatTypeUNorm = 0x0,
         FormatTypeSNorm = 0x1,
@@ -117,7 +115,9 @@ namespace Gnf
             uint32_t destY : 3;
             uint32_t destZ : 3;
             uint32_t destW : 3;
-            uint32_t unk6 : 20;
+            uint32_t : 4;
+            uint32_t mipmaps : 4;
+            uint32_t unk6 : 12;
         };
         struct
         {
@@ -136,8 +136,10 @@ namespace Gnf
     {
     public:
         Header header;
-        byte* pixels {nullptr};
+        std::shared_ptr<byte[]> imageData;
         GnfImage() = default;
-        void ReadImage(byte* file);
+        static void UnSwizzle(const byte* src, byte* dest, const uint16_t& w, const uint16_t& h, const uint16_t& bpp);
+        static int morton(int t, int sx, int sy);
+        void ReadImage(const byte* file);
     };
 }

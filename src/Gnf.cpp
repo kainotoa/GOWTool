@@ -11,14 +11,22 @@ namespace Gnf
 
 		return;
 	}
-	void GnfImage::UnSwizzle(const byte* src, byte* dst, const uint16_t& w, const uint16_t& h,const uint16_t &bpp)
+	void GnfImage::UnSwizzle(const byte* src, byte* dst, const uint16_t& w, const uint16_t& h,const uint16_t &bpp, const uint16_t &pixbl)
 	{
+		size_t min = 4 * 4 * bpp / 8;
 		uint32_t num2 = w * h * bpp / 8;
-		if (num2 < 1)
+		if (num2 <= min)
+		{
+			memcpy(dst, src, min);
 			return;
+		}
 
-		uint32_t num4 = 4; // sub to change
+		uint32_t num4 = pixbl; // sub to change
 		uint32_t num5 = bpp * 2;
+		if (num4 == 1)
+		{
+			num5 = bpp / 8;
+		}
 		byte* array1 = new byte[num2 * 2];
 		byte* array2 = new byte[16];
 		int num6 = h / num4;

@@ -138,7 +138,7 @@ namespace Gnf
         Header header;
         std::shared_ptr<byte[]> imageData;
         GnfImage() = default;
-        static void UnSwizzle(const byte* src, byte* dest, const uint16_t& w, const uint16_t& h, const uint16_t& bpp);
+        static void UnSwizzle(const byte* src, byte* dest, const uint16_t& w, const uint16_t& h, const uint16_t& bpp, const uint16_t& pixbl);
         static int morton(int t, int sx, int sy);
         void ReadImage(const byte* file);
     };

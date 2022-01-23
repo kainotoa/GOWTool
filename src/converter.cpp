@@ -2,10 +2,11 @@
 #include "gnf.h"
 #include "converter.h"
 #include <DirectXTex/DirectXTex.h>
+#include <DirectXTex/DirectXTexP.h>
 #include <DirectXTex/DDS.h>
 #include <dxgiformat.h>
 
-int ConvertGnfToDDS(const byte* gnfsrc, byte*& ddsout)
+size_t ConvertGnfToDDS(const byte* gnfsrc, byte*& ddsout)
 {
 	Gnf::GnfImage gnfimg;
 	gnfimg.ReadImage(gnfsrc);
@@ -55,13 +56,17 @@ int ConvertGnfToDDS(const byte* gnfsrc, byte*& ddsout)
 		if (gnfimg.header.formatType == Gnf::FormatType::FormatTypeSRGB)
 			meta.format = DXGI_FORMAT_BC7_UNORM_SRGB;
 		break;
+	case Gnf::Format::Format8:
+		meta.format = DXGI_FORMAT_R8_UNORM;
+		break;
 	default:
 		throw std::exception("Format not implemented!");
 		break;
 	}
 
 	// sub to change
-	uint16_t bpp = 0;
+	uint16_t bpp = 8;
+	uint16_t pixbl = 4;
 	switch (gnfimg.header.format)
 	{
 	case Gnf::Format::FormatBC1:
@@ -75,14 +80,52 @@ int ConvertGnfToDDS(const byte* gnfsrc, byte*& ddsout)
 	case Gnf::Format::FormatBC7:
 		bpp = 8;
 		break;
+	case Gnf::Format::Format8:
+		bpp = 8;
+		pixbl = 1;
+		break;
 	default:
 		throw std::exception("Format not implemented!");
 		break;
 	}
 
-	size_t size = meta.width * meta.height * bpp / 8;
-	byte* put = new byte[size];
-	Gnf::GnfImage::UnSwizzle(gnfimg.imageData.get(), put, meta.width, meta.height, bpp);
+	byte* header = new byte[148];
+	size_t required;
+	DirectX::DDS_FLAGS flag = DirectX::DDS_FLAGS::DDS_FLAGS_NONE;
+	DirectX::_EncodeDDSHeader(meta, flag, header, 148, required);
 
-	return 0;
+	size_t datasize = 0;
+	for (uint32_t i = 0; i < meta.mipLevels; i++)
+	{
+		size_t min = 4 * 4 * bpp / 8;
+		size_t fact = pow(size_t(2), size_t(i));
+		size_t size = (meta.width * meta.height) / (fact * fact) * bpp / 8;
+		if (size < min)
+		{
+			size = min;
+		}
+		datasize += size;
+	}
+
+	ddsout = new byte[datasize + required];
+	memcpy(ddsout, header, required);
+
+	size_t ddsoff = required;
+	size_t gnfoff = 0;
+	for (uint32_t i = 0; i < meta.mipLevels; i++)
+	{
+		size_t min = 4 * 4 * bpp / 8;
+		size_t fact = pow(size_t(2), size_t(i));
+		size_t size = (meta.width * meta.height) / (fact * fact) * bpp / 8;
+		if (size < min)
+		{
+			size = min;
+		}
+		Gnf::GnfImage::UnSwizzle(gnfimg.imageData.get() + gnfoff, ddsout + ddsoff, meta.width / fact, meta.height / fact, bpp,pixbl);
+		ddsoff += size;
+		size_t pad = (size + 511) & (~511);
+		gnfoff += pad;
+	}
+
+	return (datasize + required);
 }

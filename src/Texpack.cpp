@@ -106,7 +106,8 @@ bool Texpack::ExportGnf(byte* &output, const uint64_t& hash, uint32_t& expSize)
 	uint32_t writeOff = 0;
 	for (uint32_t i = 0; i < texblockInfos.size(); i++)
 	{
-		fs.seekg((size_t(texblockInfos[i]->_blockOff) << 4) + 4,std::ios::beg);
+		size_t ooof = (size_t(texblockInfos[i]->_blockOff) << 4) + 4;
+		fs.seekg(ooof,std::ios::beg);
 		uint32_t off = 0;
 		uint32_t len = 0;
 		fs.read((char*)&off, sizeof(uint32_t));
@@ -151,10 +152,10 @@ bool Texpack::ExportGnf(const std::filesystem::path& dir, const uint64_t& hash, 
 		outpath /= (name + ".gnf");
 	}
 
-	std::ofstream fs(outpath.string(), ios::binary | ios::out);
-	fs.write((char*)output, size);
+	std::ofstream ofs(outpath.string(), ios::binary | ios::out);
+	ofs.write((char*)output, size);
 	delete[] output;
-	fs.close();
+	ofs.close();
 	return true;
 }
 bool Texpack::ExportAllGnf(const std::filesystem::path& dir)

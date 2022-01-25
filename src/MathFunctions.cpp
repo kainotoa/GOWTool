@@ -1,6 +1,18 @@
 #include "pch.h"
 #include "MathFunctions.h"
 
+uint32_t BitHacks::RoundUpTo2(uint32_t v)
+{
+	v--;
+	v |= v >> 1;
+	v |= v >> 2;
+	v |= v >> 4;
+	v |= v >> 8;
+	v |= v >> 16;
+	v++;
+	return v;
+}
+
 Vec3::Vec3(const float& x, const float& y, const float& z)
 {
 	X = x, Y = y, Z = z;

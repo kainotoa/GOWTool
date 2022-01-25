@@ -91,45 +91,45 @@ namespace Gnf
     };
     struct Header
     {
-        uint32_t gnfMagic = 0x20464E47U;
-        uint32_t imageDataOffset = 0xF8U;
-        uint32_t unk1;
-        uint32_t fileSize;
-        uint32_t unk2;
+        uint32_t gnfMagic{ 0x20464E47U };
+        uint32_t imageDataOffset{ 0xF8U };
+        uint32_t unk1{ 0x80102U };
+        uint32_t fileSize{ 0x1U };
+        uint32_t unk2{ 0x0U };
         struct
         {
-            uint32_t unk3 : 20;
-            Format format : 6;
-            FormatType formatType : 4;
-            uint32_t unk4 : 2;
+            uint32_t unk3 : 20{ 0x8 };
+            Format format : 6{ Format::Format8 };
+            FormatType formatType : 4{ FormatType::FormatTypeUNorm };
+            uint32_t unk4 : 2{ 0x0 };
         };
         struct
         {
-            uint32_t width : 14;
-            uint32_t height : 14;
-            uint32_t unk5 : 4;
+            uint32_t width : 14 { 0x0 };
+            uint32_t height : 14 { 0x0 };
+            uint32_t unk5 : 4 { 0x7 };
         };
         struct
         {
-            uint32_t destX : 3;
-            uint32_t destY : 3;
-            uint32_t destZ : 3;
-            uint32_t destW : 3;
-            uint32_t : 4;
-            uint32_t mipmaps : 4;
-            uint32_t unk6 : 12;
+            uint32_t destX : 3 { 0x4 };
+            uint32_t destY : 3 { 0x0 };
+            uint32_t destZ : 3 { 0x0 };
+            uint32_t destW : 3 { 0x1 };
+            uint32_t unk6 : 4 { 0x0 };
+            uint32_t mipmaps : 4 { 0x0 };
+            uint32_t unk7 : 12 { 0x96D };
         };
         struct
         {
-            uint32_t depth : 13;
+            uint32_t depth : 13 { 0x0 };
             uint32_t pitch : 13;
-            uint32_t unk7 : 6;
+            uint32_t unk8 : 6;
         };
-        uint32_t unk8;
         uint32_t unk9;
+        uint32_t unk10;
         uint32_t dataSize;
         uint32_t userMagic = 0x52455355U;
-        uint32_t unk10;
+        uint32_t unk11;
         uint64_t userHash;
     };
     class GnfImage
@@ -139,6 +139,7 @@ namespace Gnf
         std::shared_ptr<byte[]> imageData;
         GnfImage() = default;
         static void UnSwizzle(const byte* src, byte* dest, const uint16_t& w, const uint16_t& h, const uint16_t& bpp, const uint16_t& pixbl);
+        static void Swizzle(const byte* src, byte* dst, const uint16_t& w, const uint16_t& h, const uint16_t& bpp, const uint16_t& pixbl);
         static int morton(int t, int sx, int sy);
         void ReadImage(const byte* file);
     };

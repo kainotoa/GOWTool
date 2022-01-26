@@ -3,11 +3,23 @@
 
 namespace Gnf
 {
+	GnfImage::GnfImage()
+	{
+		imageData = std::make_shared<byte[]>(0x100);
+	}
 	void GnfImage::ReadImage(const byte* file)
 	{
 		memcpy(&header, file, sizeof(Header));
 		imageData = std::make_shared<byte[]>(header.dataSize);
-		memcpy(imageData.get(), file + sizeof(Header) + 0xC0, header.dataSize);
+		memcpy(imageData.get(), file + sizeof(Header), header.dataSize);
+
+		return;
+	}
+	void GnfImage::WriteImage(byte*& file)
+	{
+		file = new byte[this->header.fileSize];
+		memcpy(file, &(this->header), sizeof(this->header));
+		memcpy(file + sizeof(this->header), imageData.get(), this->header.dataSize);
 
 		return;
 	}

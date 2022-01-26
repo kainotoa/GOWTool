@@ -89,12 +89,12 @@ namespace Gnf
         FormatTypeReserved_14 = 0xe,
         FormatTypeReserved_15 = 0xf
     };
-    struct Header
+    struct alignas(0x100) Header
     {
         uint32_t gnfMagic{ 0x20464E47U };
         uint32_t imageDataOffset{ 0xF8U };
         uint32_t unk1{ 0x80102U };
-        uint32_t fileSize{ 0x1U };
+        uint32_t fileSize{ 0x200U };
         uint32_t unk2{ 0x0U };
         struct
         {
@@ -122,25 +122,26 @@ namespace Gnf
         struct
         {
             uint32_t depth : 13 { 0x0 };
-            uint32_t pitch : 13;
-            uint32_t unk8 : 6;
+            uint32_t pitch : 13 { 0xF };
+            uint32_t unk8 : 6 { 0x0 };
         };
-        uint32_t unk9;
-        uint32_t unk10;
-        uint32_t dataSize;
+        uint32_t unk9 { 0x0 };
+        uint32_t unk10 { 0x0 };
+        uint32_t dataSize { 0x100 };
         uint32_t userMagic = 0x52455355U;
-        uint32_t unk11;
-        uint64_t userHash;
+        uint32_t unk11 { 0x28 };
+        uint64_t userHash { UINT64_MAX };
     };
     class GnfImage
     {
     public:
         Header header;
         std::shared_ptr<byte[]> imageData;
-        GnfImage() = default;
+        GnfImage();
         static void UnSwizzle(const byte* src, byte* dest, const uint16_t& w, const uint16_t& h, const uint16_t& bpp, const uint16_t& pixbl);
         static void Swizzle(const byte* src, byte* dst, const uint16_t& w, const uint16_t& h, const uint16_t& bpp, const uint16_t& pixbl);
         static int morton(int t, int sx, int sy);
         void ReadImage(const byte* file);
+        void WriteImage(byte*& file);
     };
 }

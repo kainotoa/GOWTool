@@ -1,6 +1,8 @@
 #include <pch.h>
 #include <Texpack.h>
 #include <krak.h>
+#include "Gnf.h"
+#include "converter.h"
 
 Texpack::Texpack(const std::filesystem::path& filepath)
 {
@@ -21,9 +23,7 @@ Texpack::Texpack(const std::filesystem::path& filepath)
 	for (uint32_t i = 0; i < _TexsCount; i++)
 	{
 		TexInfo& info = _texInfos[i];
-		fs.read((char*)&info._fileHash, sizeof(uint64_t));
-		fs.read((char*)&info._userHash, sizeof(uint64_t));
-		fs.read((char*)&info._blockInfoOff, sizeof(uint64_t));
+		fs.read((char*)&info, sizeof(info));
 	}
 
 	_blockInfos = new BlockInfo[_blocksCount];
@@ -33,13 +33,7 @@ Texpack::Texpack(const std::filesystem::path& filepath)
 	{
 		_blockInfoOffsets[i] = fs.tellg();
 		BlockInfo& info = _blockInfos[i];
-		fs.read((char*)&info._blockOff, sizeof(uint32_t));
-		fs.read((char*)&info._rawSize, sizeof(uint32_t));
-		fs.read((char*)&info._blockSize, sizeof(uint64_t));
-		fs.read((char*)&info._unk, sizeof(uint32_t));
-		fs.read((char*)&info._mipWidth, sizeof(uint16_t));
-		fs.read((char*)&info._mipHeight, sizeof(uint16_t));
-		fs.read((char*)&info._nextSiblingBlockInfoOff, sizeof(uint64_t));
+		fs.read((char*)&info, sizeof(info));
 	}
 }
 Texpack::~Texpack()
@@ -132,7 +126,7 @@ bool Texpack::ExportGnf(byte* &output, const uint64_t& hash, uint32_t& expSize)
 	expSize = writeSize;
 	return true;
 }
-bool Texpack::ExportGnf(const std::filesystem::path& dir, const uint64_t& hash, std::string name)
+bool Texpack::ExportGnf(const std::filesystem::path& dir, const uint64_t& hash, std::string name,bool dds)
 {
 	if (!std::filesystem::exists(dir))
 		return false;
@@ -152,17 +146,44 @@ bool Texpack::ExportGnf(const std::filesystem::path& dir, const uint64_t& hash, 
 		outpath /= (name + ".gnf");
 	}
 
-	std::ofstream ofs(outpath.string(), ios::binary | ios::out);
-	ofs.write((char*)output, size);
+	if (dds)
+	{
+		outpath.replace_extension(std::filesystem::path(".dds"));
+
+		byte* ddsout = nullptr;
+		size = ConvertGnfToDDS(output,size,ddsout);
+		std::ofstream ofs(outpath.string(), ios::binary | ios::out);
+		ofs.write((char*)ddsout, size);
+		ofs.close();
+	}
+	else
+	{
+		std::ofstream ofs(outpath.string(), ios::binary | ios::out);
+		ofs.write((char*)output, size);
+		ofs.close();
+	}
+
 	delete[] output;
-	ofs.close();
 	return true;
 }
-bool Texpack::ExportAllGnf(const std::filesystem::path& dir)
+bool Texpack::ExportAllGnf(const std::filesystem::path& dir,bool dds)
 {
 	for (uint32_t i = 0; i < _TexsCount; i++)
 	{
-		ExportGnf(dir, _texInfos[i]._fileHash);
+		ExportGnf(dir, _texInfos[i]._fileHash,"",dds);
 	}
 	return true;
 }
+bool Texpack::GetUserHash(const uint64_t& hash, uint64_t& outUserHash)
+{
+	for (uint32_t i = 0; i < _TexsCount; i++)
+	{
+		if (_texInfos[i]._fileHash == hash)
+		{
+			outUserHash = _texInfos[i]._userHash;
+			return true;
+		}
+	}
+	return false;
+}
+

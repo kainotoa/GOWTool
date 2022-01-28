@@ -8,7 +8,7 @@ class Texpack
 	uint32_t _blocksCount{ 0 };
 	uint32_t _blocksInfoOff{ 0 };
 	uint32_t _TexsCount{ 0 };
-
+public:
 	struct TexInfo
 	{
 		uint64_t _fileHash;
@@ -16,17 +16,20 @@ class Texpack
 		uint64_t _blockInfoOff;
 	};
 
-	TexInfo* _texInfos {nullptr};
 	struct BlockInfo
 	{
 		uint32_t _blockOff;
 		uint32_t _rawSize;
 		uint64_t _blockSize;
-		uint32_t _unk;
+		byte _mipLvlStart;
+		byte _mipLvlEnd;
+		uint16_t _tocFileIdx;
 		uint16_t _mipWidth;
 		uint16_t _mipHeight;
 		uint64_t _nextSiblingBlockInfoOff;
 	};
+private:
+	TexInfo* _texInfos{ nullptr };
 	BlockInfo* _blockInfos{ nullptr };
 
 	uint64_t* _blockInfoOffsets{ nullptr };
@@ -35,7 +38,8 @@ public:
 	Texpack(const std::filesystem::path &filepath);
 	bool ContainsTexture(const uint64_t &hash);
 	bool ExportGnf(byte* &output,const uint64_t& hash, uint32_t& expSiz);
-	bool ExportGnf(const std::filesystem::path& dir,const uint64_t& hash,std::string name = "");
-	bool ExportAllGnf(const std::filesystem::path& dir);
+	bool ExportGnf(const std::filesystem::path& dir,const uint64_t& hash,std::string name = "",bool dds = false);
+	bool ExportAllGnf(const std::filesystem::path& dir,bool dds = false);
+	bool GetUserHash(const uint64_t& hash, uint64_t& outUserHash);
 	~Texpack();
 };

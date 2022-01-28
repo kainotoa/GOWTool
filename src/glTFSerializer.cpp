@@ -55,6 +55,7 @@ private:
 auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshContainer& expMesh, bool Skinned)
 {
     MeshPrimitive meshPrimitive;
+    meshPrimitive.materialId = document.materials.Front().id;
 
     // Create a BufferView with a target of ELEMENT_ARRAY_BUFFER (as it will reference index
     // data) - it will be the 'current' BufferView that all the Accessors created by this
@@ -75,11 +76,11 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
         // Copy the Accessor's id - subsequent calls to AddAccessor may invalidate the returned reference
         meshPrimitive.indicesAccessorId = bufferBuilder.AddAccessor(indices, { TYPE_SCALAR, COMPONENT_UNSIGNED_SHORT }).id;
     }
-    // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
-    bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
     
     if (expMesh.vertices != nullptr)
     {
+        // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
         // Add an Accessor for the positions
         std::vector<float> positions;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
@@ -106,6 +107,8 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
 
     if (expMesh.normals != nullptr)
     {
+        // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
         // Add an Accessor for the normals
         std::vector<float> normals;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
@@ -119,6 +122,8 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
 
     if (expMesh.tangents != nullptr)
     {
+        // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
         // Add an Accessor for the tangents
         std::vector<float> tangents;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
@@ -134,6 +139,8 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
 
     if (expMesh.txcoord0 != nullptr)
     {
+        // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
         std::vector<float> texcoords0;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
         {
@@ -145,6 +152,8 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
 
     if (expMesh.txcoord1 != nullptr)
     {
+        // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
         std::vector<float> texcoords1;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
         {
@@ -156,6 +165,8 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
 
     if (expMesh.txcoord2 != nullptr)
     {
+        // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
         std::vector<float> texcoords2;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
         {
@@ -167,6 +178,8 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
 
     if (expMesh.joints != nullptr)
     {
+        // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
         std::vector<uint16_t> joints0;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
         {
@@ -179,6 +192,8 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
     }
     if (expMesh.weights != nullptr)
     {
+        // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
         std::vector<float> weights0;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
         {
@@ -219,6 +234,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
 
     // Construct a Mesh and add the MeshPrimitive as a child
     Mesh mesh;
+    mesh.name = expMesh.name;
     mesh.primitives.push_back(std::move(meshPrimitive));
     // Add it to the Document and store the generated ID
     auto meshId = document.meshes.Append(std::move(mesh), AppendIdPolicy::GenerateOnEmpty).id;
@@ -226,8 +242,9 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
     // Construct a Node adding a reference to the Mesh
     Node node;
     node.meshId = meshId;
+    node.name = expMesh.name;
     if(Skinned)
-    node.skinId = "0";
+    node.skinId = document.skins.Front().id;
     // Add it to the Document and store the generated ID
     auto nodeId = document.nodes.Append(std::move(node), AppendIdPolicy::GenerateOnEmpty).id;
 
@@ -269,7 +286,8 @@ void WriteGLTF(const std::filesystem::path& path, const vector<RawMeshContainer>
 
     // The Document instance represents the glTF JSON manifest
     Document document;
-
+    document.asset.copyright = "Santa Monica Studios";
+    document.asset.generator = "God of War Tool - HitmanHimself";
     // Use the BufferBuilder helper class to simplify the process of
     // constructing valid glTF Buffer, BufferView and Accessor entities
     BufferBuilder bufferBuilder(std::move(resourceWriter));
@@ -289,8 +307,17 @@ void WriteGLTF(const std::filesystem::path& path, const vector<RawMeshContainer>
     // created by this BufferBuilder will automatically reference
     bufferBuilder.AddBuffer(bufferId);
 
+    Material material;
+    material.name = "Default";
+    material.metallicRoughness.baseColorFactor = Color4(1.0f, 1.0f, 1.0f, 1.0f);
+    material.metallicRoughness.metallicFactor = 0.0f;
+    material.metallicRoughness.roughnessFactor = 0.5f;
+    material.doubleSided = true;
+    document.materials.Append(std::move(material), AppendIdPolicy::GenerateOnEmpty);
+
     // Construct a Scene
     Scene scene;
+    scene.name = "Scene";
     if (Armature.boneCount > 0u)
     {
         std::vector<Node> nodes;
@@ -320,7 +347,7 @@ void WriteGLTF(const std::filesystem::path& path, const vector<RawMeshContainer>
         skin.jointIds = nodeIds;
 
         // Create a BufferView with target ARRAY_BUFFER (as it will reference IBM'sdata)
-        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
+        bufferBuilder.AddBufferView();
 
         std::vector<float> IBMs;
         for (uint16_t i = 0; i < Armature.boneCount; i++)
@@ -340,7 +367,7 @@ void WriteGLTF(const std::filesystem::path& path, const vector<RawMeshContainer>
         document.skins.Append(std::move(skin), AppendIdPolicy::GenerateOnEmpty);
         for (size_t i = 0; i < expMeshes.size(); i++)
         {
-            AddMesh(document, bufferBuilder, expMeshes[i],true);
+            scene.nodes.push_back(AddMesh(document, bufferBuilder, expMeshes[i],true));
         }
     }
     else

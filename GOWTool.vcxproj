@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -152,6 +152,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="src\anims.cpp" />
     <ClCompile Include="src\Formats.cpp" />
     <ClCompile Include="src\glTFSerializer.cpp" />
     <ClCompile Include="src\Gnf.cpp" />
@@ -160,14 +161,16 @@
     <ClCompile Include="src\MainFunctions.cpp" />
     <ClCompile Include="src\MathFunctions.cpp" />
     <ClCompile Include="src\Rig.cpp" />
+    <ClCompile Include="src\converter.cpp" />
     <ClCompile Include="src\Texpack.cpp" />
     <ClCompile Include="src\utils.cpp" />
     <ClCompile Include="src\Wad.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="inc\anims.h" />
     <ClInclude Include="inc\Formats.h" />
     <ClInclude Include="inc\glTFSerializer.h" />
-    <ClInclude Include="inc\Gnf.h" />
+    <ClInclude Include="inc\gnf.h" />
     <ClInclude Include="inc\krak.h" />
     <ClInclude Include="inc\Lodpak.h" />
     <ClInclude Include="inc\MainFunctions.h" />
@@ -175,6 +178,7 @@
     <ClInclude Include="inc\Mesh.h" />
     <ClInclude Include="inc\Rig.h" />
     <ClInclude Include="inc\streams.h" />
+    <ClInclude Include="inc\converter.h" />
     <ClInclude Include="inc\Texpack.h" />
     <ClInclude Include="inc\utils.h" />
     <ClInclude Include="inc\Wad.h" />

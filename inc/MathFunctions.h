@@ -1,5 +1,13 @@
 #pragma once
 #include <cmath>
+
+class BitHacks
+{
+public:
+	static uint32_t RoundUpTo2(uint32_t v);
+};
+
+
 struct Vec3
 {
 	float X { 0 }, Y { 0 }, Z { 0 };

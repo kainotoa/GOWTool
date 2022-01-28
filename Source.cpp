@@ -740,11 +740,12 @@ int main(int argc, char* argv[])
             }
             else if (op == "-e" || op == "--export")
             {
-                imp = true;
+                exp = true;
+
             }
             else if (op == "-i" || op == "--import")
             {
-                exp = true;
+                imp = true;
             }
             else if (op == "-d" || op == "--dds")
             {

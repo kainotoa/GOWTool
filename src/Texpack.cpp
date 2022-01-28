@@ -155,6 +155,7 @@ bool Texpack::ExportGnf(const std::filesystem::path& dir, const uint64_t& hash, 
 		std::ofstream ofs(outpath.string(), ios::binary | ios::out);
 		ofs.write((char*)ddsout, size);
 		ofs.close();
+		delete[] ddsout;
 	}
 	else
 	{

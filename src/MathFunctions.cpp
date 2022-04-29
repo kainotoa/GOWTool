@@ -180,4 +180,47 @@ Vec4 TenBitUnsigned(const uint32_t& U32)
 	Vec4 v((X / 1023.f), (Y / 1023.f), (Z / 1023.f), W / 3.f);
 	return v;
 }
+uint32_t UnTenBitShifted(const Vec4& vec)
+{
+	float x = std::clamp<float>(vec.X, -1.f, +1.f);
+	float y = std::clamp<float>(vec.Y, -1.f, +1.f);
+	float z = std::clamp<float>(vec.Z, -1.f, +1.f);
+
+	float Quant = 1023.f;
+	uint32_t a = uint32_t((x + 1.f) * Quant / 2);
+	a = std::clamp<uint32_t>(a, 0, 1023U);
+	uint32_t b = uint32_t((y + 1.f) * Quant / 2);
+	b = std::clamp<uint32_t>(b, 0, 1023U);
+	b <<= 10;
+	uint32_t c = uint32_t((z + 1.f) * Quant / 2);
+	c = std::clamp<uint32_t>(c, 0, 1023U);
+	c <<= 20;
+
+	uint32_t packed = 0U | a | b | c;
+
+	return packed;
+}
+uint32_t UnTenBitUnsigned(const Vec4& vec)
+{
+	float x = std::clamp<float>(vec.X, 0, +1.f);
+	float y = std::clamp<float>(vec.Y, 0, +1.f);
+	float z = std::clamp<float>(vec.Z, 0, +1.f);
+
+	float Quant = 1023.f;
+
+	uint32_t a = uint32_t(x * Quant);
+	a = std::clamp<uint32_t>(a, 0, 1023U);
+
+	uint32_t b = uint32_t(y * Quant);
+	b = std::clamp<uint32_t>(b, 0, 1023U);
+	b <<= 10;
+
+	uint32_t c = uint32_t(z * Quant);
+	c = std::clamp<uint32_t>(c, 0, 1023U);
+	c <<= 20;
+
+	uint32_t packed = 0U | a | b | c;
+
+	return packed;
+}
 #pragma warning(default:4244)

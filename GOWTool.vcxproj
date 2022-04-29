@@ -120,7 +120,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>.\inc;.\src;.;.\glTF-SDK\GLTFSDK\inc;.\DirectXTex;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -154,6 +154,7 @@
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="src\anims.cpp" />
     <ClCompile Include="src\Formats.cpp" />
+    <ClCompile Include="src\glTFDeserializer.cpp" />
     <ClCompile Include="src\glTFSerializer.cpp" />
     <ClCompile Include="src\Gnf.cpp" />
     <ClCompile Include="src\krak.cpp" />
@@ -169,6 +170,7 @@
   <ItemGroup>
     <ClInclude Include="inc\anims.h" />
     <ClInclude Include="inc\Formats.h" />
+    <ClInclude Include="inc\glTFDeserializer.h" />
     <ClInclude Include="inc\glTFSerializer.h" />
     <ClInclude Include="inc\gnf.h" />
     <ClInclude Include="inc\krak.h" />

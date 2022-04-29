@@ -71,4 +71,5 @@ struct MeshInfo
 	Vec3 meshMin{ };
 	uint16_t LODlvl{ 0 };
 	uint16_t boneAssociated{ 0 };
+	string name;
 };

@@ -71,3 +71,5 @@ struct Quat
 };
 Vec4 TenBitShifted(const uint32_t& U32);
 Vec4 TenBitUnsigned(const uint32_t& U32);
+uint32_t UnTenBitShifted(const Vec4& vec);
+uint32_t UnTenBitUnsigned(const Vec4& vec);

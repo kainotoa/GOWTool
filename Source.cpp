@@ -1,3 +1,4 @@
+#include "Utils.h"
 #include "pch.h"
 #include "Rig.h"
 #include "glTFSerializer.h"
@@ -6,11 +7,454 @@
 #include "Texpack.h"
 #include "Lodpak.h"
 #include "Wad.h"
-#include "krak.h"
-#include "utils.h"
 #include "Gnf.h"
 #include "converter.h"
+#include "glTFDeserializer.h"
 
+bool ImportModels(const std::filesystem::path& wadDir, const std::filesystem::path& wadPath)
+{
+    std::ifstream inWadStream(wadPath.string(), std::ios::binary | std::ios::in);
+    inWadStream.seekg(0, std::ios::end);
+    size_t endd = inWadStream.tellg();
+
+    std::stringstream wadStream;
+    byte* wadBytes = new byte[endd];
+    inWadStream.seekg(0, std::ios::beg);
+    inWadStream.read((char*) wadBytes, endd);
+    wadStream.write((char*)wadBytes, endd);
+    delete[] wadBytes;
+    inWadStream.close();
+
+    vector<int> usedMeshBufferIndices;
+    WadFile srcWad;
+    srcWad.Read(wadPath);
+    std::filesystem::directory_iterator dirIter(wadDir);
+    for (const std::filesystem::directory_entry& iter : dirIter)
+    {
+        string ext = Utils::str_tolower(iter.path().filename().extension().string());
+        if (ext != ".glb" && ext != ".gltf")
+            continue;
+
+        string name = iter.path().filename().stem().string();
+
+        size_t idx = name.find_last_of('.');
+        if (idx == string::npos)
+        {
+            cout << "file index not apped to the file: " << name << "\n";
+            continue;
+        }
+
+        try
+        {
+            idx = std::stoull(name.substr(idx + 1, name.length() - idx - 1));
+        }
+        catch (...)
+        {
+            cout << "Invalid File Index Appended: " << name << "\n";
+            continue;
+        }
+        if (idx >= srcWad._FileEntries.size())
+        {
+            cout << "Invalid File Index Appended(Out of Bounds of Wad files): " << name << "\n";
+            continue;
+        }
+        name = name.substr(0, name.find_last_of('.'));
+        if (Utils::str_tolower(srcWad._FileEntries[idx].name) != Utils::str_tolower(name))
+        {
+            cout << "File name Doesn't match the original: " << name << "\n";
+            continue;
+        }
+        if (srcWad._FileEntries[idx].type != WadFile::FileType::SkinnedMeshDef)
+        {
+            cout << "Importing Skinned mesh is only possible atm: " << name << "\n";
+            continue;
+        }
+        std::shared_ptr<Microsoft::glTF::GLTFResourceReader> resourceReader;
+        Microsoft::glTF::Document document;
+        ReadGLTF(iter.path(), document, resourceReader);
+        PrintDocumentInfo(document);
+
+        name = srcWad._FileEntries[idx].name.substr(3, srcWad._FileEntries[idx].name.length() - 5);
+        std::stringstream meshDefStream;
+        std::fstream meshBuffStream;
+            meshBuffStream.open(R"(C:\Users\abhin\OneDrive\Desktop\r_heroa00\r_baldur00\test.bin)", std::ios::binary | std::ios::out);
+        std::stringstream rigStream;
+        srcWad.GetBuffer(idx, meshDefStream);
+        /*
+        int idx2 = 0;
+        for (int j = 0; j < srcWad._FileEntries.size(); j++)
+        {
+            if (srcWad._FileEntries[j].type == WadFile::FileType::SkinnedMeshBuff && (srcWad._FileEntries[j].name.find(srcWad._FileEntries[idx].name) != std::string::npos))
+            {
+                if (std::find(usedMeshBufferIndices.begin(), usedMeshBufferIndices.end(), j) != usedMeshBufferIndices.end())
+                    continue;
+                idx2 = j;
+                srcWad.GetBuffer(j, meshBuffStream);
+                usedMeshBufferIndices.push_back(j);
+                break;
+            }
+        }
+        */
+        for (int j = 0; j < srcWad._FileEntries.size(); j++)
+        {
+            if (srcWad._FileEntries[j].type == WadFile::FileType::Rig && (srcWad._FileEntries[j].name.find("Proto") != std::string::npos))
+            {
+                std::string sample = Utils::str_tolower(srcWad._FileEntries[j].name.substr(7, srcWad._FileEntries[j].name.length() - 7));
+                if (sample == name)
+                {
+                    srcWad.GetBuffer(j, rigStream);
+                    break;
+                }
+            }
+        }
+
+        
+        MGDefinition meshDef;
+        auto oldMeshInfos = meshDef.ReadMG(meshDefStream);
+
+        Rig rig(rigStream);
+        std::vector<RawMeshContainer> inMeshes;
+        GetRawMeshesFromGLTF(document, *resourceReader,inMeshes, rig);
+
+        std::vector<MeshInfo> newMeshInfos;
+        for (uint32_t i = 0; i < inMeshes.size(); i++)
+        {
+            for (uint32_t j = 0; j < oldMeshInfos.size(); j++)
+            {
+                char buf[10];
+                sprintf_s(buf, "%04d", j);
+                string subname = "submesh_" + string(buf) + "_" + std::to_string(oldMeshInfos[j].LODlvl);
+                if (subname == inMeshes[i].name)
+                {
+                    auto newMeshInfo = oldMeshInfos[j];
+                    newMeshInfo.name = subname;
+                    newMeshInfo.vertCount = inMeshes[i].VertCount;
+                    newMeshInfo.indCount = inMeshes[i].IndCount;
+
+                    Vec3 Max = Vec3(std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min());
+                    Vec3 Min = Vec3(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+
+                    for (uint32_t t = 0; t < inMeshes[i].VertCount; t++)
+                    {
+                        Max.X = std::max<float>(inMeshes[i].vertices[t].X, Max.X);
+                        Max.Y = std::max<float>(inMeshes[i].vertices[t].Y, Max.Y);
+                        Max.Z = std::max<float>(inMeshes[i].vertices[t].Z, Max.Z);
+
+                        Min.X = std::min<float>(inMeshes[i].vertices[t].X, Min.X);
+                        Min.Y = std::min<float>(inMeshes[i].vertices[t].Y, Min.Y);
+                        Min.Z = std::min<float>(inMeshes[i].vertices[t].Z, Min.Z);
+                    }
+
+                    newMeshInfo.meshScale = Vec3(Max.X - Min.X, Max.Y - Min.Y, Max.Z - Min.Z);
+                    newMeshInfo.meshMin = Min;
+
+                    // Allocation
+                    std::vector<std::stringstream*> buffers;
+                    for (uint32_t t = 0; t < newMeshInfo.bufferOffset.size(); t++)
+                    {
+                        std::stringstream* buffer = new std::stringstream();
+                        byte* bytes = new byte[newMeshInfo.bufferStride[t] * newMeshInfo.vertCount](0);
+                        buffer->write((char*)bytes, newMeshInfo.bufferStride[t] * newMeshInfo.vertCount);
+                        buffers.push_back(buffer);
+                        delete[] bytes;
+                    }
+                    std::stringstream indicesBuffer;
+
+                    if (newMeshInfo.Hash != 0)
+                    {
+                        for (uint32_t t = 0; t < newMeshInfo.Components.size(); t++)
+                        {
+                            switch (newMeshInfo.Components[t].primitiveType)
+                            {
+                            case PrimitiveTypes::POSITION:
+                                if (inMeshes[i].vertices != nullptr)
+                                {
+                                    for (size_t v = 0; v < newMeshInfo.vertCount; v++)
+                                    {
+                                        buffers[newMeshInfo.Components[t].bufferIndex]->seekp(newMeshInfo.Components[t].offset + newMeshInfo.bufferStride[newMeshInfo.Components[t].bufferIndex] * v);
+                                        if (newMeshInfo.Components[t].dataType == DataTypes::UNSIGNED_SHORT)
+                                        {
+                                            Vec3 vec = inMeshes[i].vertices[v];
+                                            vec.X -= newMeshInfo.meshMin.X;
+                                            vec.Y -= newMeshInfo.meshMin.Y;
+                                            vec.Z -= newMeshInfo.meshMin.Z;
+                                            vec.X /= newMeshInfo.meshScale.X * 65535.f;
+                                            vec.Y /= newMeshInfo.meshScale.Y * 65535.f;
+                                            vec.Z /= newMeshInfo.meshScale.Z * 65535.f;
+
+                                            uint16_t x = uint16_t(vec.X), y = uint16_t(vec.Y), z = uint16_t(vec.Z);
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&x, sizeof(x));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&y, sizeof(y));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&z, sizeof(z));
+                                        }
+                                        else
+                                        {
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&inMeshes[i].vertices[v].X, sizeof(float));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&inMeshes[i].vertices[v].Y, sizeof(float));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&inMeshes[i].vertices[v].Z, sizeof(float));
+                                        }
+                                    }
+                                }
+                                break;
+                            case PrimitiveTypes::NORMALS:
+                                if (inMeshes[i].normals != nullptr)
+                                {
+                                    uint32_t NorWrite32;
+                                    for (size_t v = 0; v < newMeshInfo.vertCount; v++)
+                                    {
+                                        buffers[newMeshInfo.Components[t].bufferIndex]->seekp(newMeshInfo.Components[t].offset + newMeshInfo.bufferStride[newMeshInfo.Components[t].bufferIndex] * v);
+                                        // Worry about normalization and magnitude when its 0;
+                                        inMeshes[i].normals[v].normalize();
+                                        auto vec = Vec4(inMeshes[i].normals[v].X, inMeshes[i].normals[v].Y, inMeshes[i].normals[v].Z, 1.f);
+                                        NorWrite32 = UnTenBitShifted(vec);
+                                        buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&NorWrite32, sizeof(NorWrite32));
+                                    }
+                                }
+                                break;
+                            case PrimitiveTypes::TANGENTS:
+                                if (inMeshes[i].tangents != nullptr)
+                                {
+                                    uint32_t TanWrite32;
+                                    for (size_t v = 0; v < newMeshInfo.vertCount; v++)
+                                    {
+                                        buffers[newMeshInfo.Components[t].bufferIndex]->seekp(newMeshInfo.Components[t].offset + newMeshInfo.bufferStride[newMeshInfo.Components[t].bufferIndex] * v);
+                                        // Worry about normalization and magnitude when its 0;
+                                        inMeshes[i].tangents[v].normalize();
+                                        auto vec = Vec4(inMeshes[i].tangents[v].X, inMeshes[i].tangents[v].Y, inMeshes[i].tangents[v].Z, 1.f);
+                                        TanWrite32 = UnTenBitShifted(vec);
+                                        buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&TanWrite32, sizeof(TanWrite32));
+                                    }
+                                }
+                                break;
+                            case PrimitiveTypes::TEXCOORD_0:
+                                if (inMeshes[i].txcoord0 != nullptr)
+                                {
+                                    for (size_t v = 0; v < newMeshInfo.vertCount; v++)
+                                    {
+                                        buffers[newMeshInfo.Components[t].bufferIndex]->seekp(newMeshInfo.Components[t].offset + newMeshInfo.bufferStride[newMeshInfo.Components[t].bufferIndex] * v);
+
+                                        Vec2 vec = inMeshes[i].txcoord0[v];
+
+                                        if (newMeshInfo.Components[t].dataType == DataTypes::UNSIGNED_SHORT)
+                                        {
+                                            uint16_t x = uint16_t(vec.X * 65535.f), y = uint16_t(vec.Y * 65535.f);
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&x, sizeof(x));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&y, sizeof(y));
+                                        }
+                                        else if (newMeshInfo.Components[t].dataType == DataTypes::HALFWORD_STRUCT_2)
+                                        {
+                                            uint16_t x = uint16_t(vec.X * 32767.f), y = uint16_t(vec.Y * 32767.f);
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&x, sizeof(x));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&y, sizeof(y));
+                                        }
+                                        else
+                                        {
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&vec.X, sizeof(float));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&vec.Y, sizeof(float));
+                                        }
+                                    }
+                                }
+
+                                break;
+                            case PrimitiveTypes::TEXCOORD_1:
+                                if (inMeshes[i].txcoord1 != nullptr)
+                                {
+                                    for (size_t v = 0; v < newMeshInfo.vertCount; v++)
+                                    {
+                                        buffers[newMeshInfo.Components[t].bufferIndex]->seekp(newMeshInfo.Components[t].offset + newMeshInfo.bufferStride[newMeshInfo.Components[t].bufferIndex] * v);
+
+                                        Vec2 vec = inMeshes[i].txcoord1[v];
+
+                                        if (newMeshInfo.Components[t].dataType == DataTypes::UNSIGNED_SHORT)
+                                        {
+                                            uint16_t x = uint16_t(vec.X * 65535.f), y = uint16_t(vec.Y * 65535.f);
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&x, sizeof(x));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&y, sizeof(y));
+                                        }
+                                        else if (newMeshInfo.Components[t].dataType == DataTypes::HALFWORD_STRUCT_2)
+                                        {
+                                            uint16_t x = uint16_t(vec.X * 32767.f), y = uint16_t(vec.Y * 32767.f);
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&x, sizeof(x));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&y, sizeof(y));
+                                        }
+                                        else
+                                        {
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&vec.X, sizeof(float));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&vec.Y, sizeof(float));
+                                        }
+                                    }
+                                }
+                                break;
+                            case PrimitiveTypes::TEXCOORD_2:
+                                if (inMeshes[i].txcoord2 != nullptr)
+                                {
+                                    for (size_t v = 0; v < newMeshInfo.vertCount; v++)
+                                    {
+                                        buffers[newMeshInfo.Components[t].bufferIndex]->seekp(newMeshInfo.Components[t].offset + newMeshInfo.bufferStride[newMeshInfo.Components[t].bufferIndex] * v);
+
+                                        Vec2 vec = inMeshes[i].txcoord2[v];
+
+                                        if (newMeshInfo.Components[t].dataType == DataTypes::UNSIGNED_SHORT)
+                                        {
+                                            uint16_t x = uint16_t(vec.X * 65535.f), y = uint16_t(vec.Y * 65535.f);
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&x, sizeof(x));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&y, sizeof(y));
+                                        }
+                                        else if (newMeshInfo.Components[t].dataType == DataTypes::HALFWORD_STRUCT_2)
+                                        {
+                                            uint16_t x = uint16_t(vec.X * 32767.f), y = uint16_t(vec.Y * 32767.f);
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&x, sizeof(x));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&y, sizeof(y));
+                                        }
+                                        else
+                                        {
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&vec.X, sizeof(float));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&vec.Y, sizeof(float));
+                                        }
+                                    }
+                                }
+                                break;
+                            case PrimitiveTypes::JOINTS0:
+                                if (inMeshes[i].txcoord2 != nullptr)
+                                {
+                                    for (size_t v = 0; v < newMeshInfo.vertCount; v++)
+                                    {
+                                        buffers[newMeshInfo.Components[t].bufferIndex]->seekp(newMeshInfo.Components[t].offset + newMeshInfo.bufferStride[newMeshInfo.Components[t].bufferIndex] * v);
+
+                                        if (newMeshInfo.Components[t].dataType == DataTypes::BYTE_STRUCT_0)
+                                        {
+                                            uint8_t x = uint8_t(inMeshes[i].joints[v][0]), y = uint8_t(inMeshes[i].joints[v][1]), z = uint8_t(inMeshes[i].joints[v][2]), w = uint8_t(inMeshes[i].joints[v][3]);
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&x, sizeof(x));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&y, sizeof(y));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&z, sizeof(z));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&w, sizeof(w));
+                                        }
+                                        else
+                                        {
+                                            uint16_t x = uint16_t(inMeshes[i].joints[v][0]), y = uint16_t(inMeshes[i].joints[v][1]), z = uint16_t(inMeshes[i].joints[v][2]), w = uint16_t(inMeshes[i].joints[v][3]);
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&x, sizeof(x));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&y, sizeof(y));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&z, sizeof(z));
+                                            buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&w, sizeof(w));
+                                        }
+                                    }
+                                }
+                                break;
+                            case PrimitiveTypes::WEIGHTS0:
+                                if (inMeshes[i].txcoord2 != nullptr)
+                                {
+                                    for (size_t v = 0; v < newMeshInfo.vertCount; v++)
+                                    {
+                                        buffers[newMeshInfo.Components[t].bufferIndex]->seekp(newMeshInfo.Components[t].offset + newMeshInfo.bufferStride[newMeshInfo.Components[t].bufferIndex] * v);
+
+                                        Vec4 vec = Vec4(inMeshes[i].weights[v][0], inMeshes[i].weights[v][1], inMeshes[i].weights[v][2],0.f);
+                                        float sum = vec.X + vec.Y + vec.Z;
+                                        float NorRatio = 1 / sum;
+                                        vec.X *= NorRatio;
+                                        vec.Y *= NorRatio;
+                                        vec.Z *= NorRatio;
+
+                                        uint32_t wgtWrite = UnTenBitUnsigned(vec);
+                                        // Experiment, Check whats in the 2 MSB bits (any weight info, any?)
+
+                                        buffers[newMeshInfo.Components[t].bufferIndex]->write((char*)&wgtWrite, sizeof(wgtWrite));
+                                    }
+                                }
+                                break;
+                            default:
+                                break;
+                            }
+                        }
+
+                        for (size_t v = 0; v < newMeshInfo.indCount; v++)
+                        {
+                            indicesBuffer.write((char*)&inMeshes[i].indices[v], sizeof(uint16_t));
+                        }
+                    }
+
+                    for (uint32_t t = 0; t < buffers.size(); t++)
+                    {
+                        auto& buffer = buffers[t];
+                        byte* bytes = new byte[newMeshInfo.bufferStride[t] * newMeshInfo.vertCount](0);
+                        buffer->seekg(0, std::ios::beg);
+                        buffer->read((char*)bytes, newMeshInfo.bufferStride[t] * newMeshInfo.vertCount);
+                        meshBuffStream.seekp(0, std::ios::end);
+                        newMeshInfo.bufferOffset[t] = meshBuffStream.tellp();
+                        meshBuffStream.write((char*)bytes, newMeshInfo.bufferStride[t] * newMeshInfo.vertCount);
+                        delete[] bytes;
+                    }
+
+                    byte* bytes = new byte[2 * newMeshInfo.indCount](0);
+                    indicesBuffer.seekg(0, std::ios::beg);
+                    indicesBuffer.read((char*)bytes, 2 * newMeshInfo.indCount);
+                    meshBuffStream.seekp(0, std::ios::end);
+                    newMeshInfo.indicesOffset = meshBuffStream.tellp();
+                    meshBuffStream.write((char*)bytes, 2 * newMeshInfo.indCount);
+                    delete[] bytes;
+
+                    newMeshInfo.vertexOffset = newMeshInfo.bufferOffset[0];
+                    newMeshInfos.push_back(newMeshInfo);
+
+                    meshBuffStream.close();
+                }
+            }
+        }
+        meshDef.WriteMG(newMeshInfos, meshDefStream);
+
+
+        size_t cnt = 0;
+        wadStream.seekg(0, ios::end);
+        size_t end = wadStream.tellg();
+
+        uint64_t pad = 0;
+        wadStream.seekg(0, ios::beg);
+        while (wadStream.tellg() < end)
+        {
+            WadFile::FileDesc entry;
+            wadStream.read((char*)&entry.group, sizeof(uint16_t));
+            wadStream.read((char*)&entry.type, sizeof(uint16_t));
+            wadStream.read((char*)&entry.size, sizeof(uint32_t));
+
+            wadStream.seekg(0x10, ios::cur);
+            char name[0x38];
+            wadStream.read(name, sizeof(name));
+            entry.name = string(name);
+            wadStream.seekg(0x10, ios::cur);
+            if (entry.size != 0)
+            {
+                entry.offset = static_cast<uint32_t>(wadStream.tellg());
+                if (cnt == idx)
+                {
+                    byte* replacementBytes = new byte[entry.size]; //padded 0
+                    meshDefStream.seekg(0, std::ios::beg);
+                    meshDefStream.read((char*)replacementBytes, entry.size);
+                    wadStream.seekp(entry.offset);
+                    wadStream.write((char*)replacementBytes, entry.size);
+                    delete[] replacementBytes;
+                }
+                wadStream.seekg(entry.size, ios::cur);
+                pad = wadStream.tellg();
+                pad = (pad + 15) & (~15);
+                wadStream.seekg(pad, ios::beg);
+
+                cnt++;
+            }
+        }
+
+        std::ofstream outWadStream(R"(C:\Users\abhin\OneDrive\Desktop\test.wad)", std::ios::binary | std::ios::out);
+        outWadStream.seekp(0, std::ios::beg);
+        wadStream.seekg(0, std::ios::end);
+        size_t outSize = wadStream.tellg();
+        byte* outBytes = new byte[outSize];
+        wadStream.seekg(0, std::ios::beg);
+        wadStream.read((char*)outBytes, outSize);
+        outWadStream.write((char*)outBytes, outSize);
+        outWadStream.close();
+
+        return true;
+    }
+    return true;
+}
 bool ImportAllGnf(const std::filesystem::path& gnfSrcDir, vector<Texpack*>& texpacks)
 {
     if (gnfSrcDir.empty() || !gnfSrcDir.is_absolute() || !std::filesystem::exists(gnfSrcDir) || !std::filesystem::is_directory(gnfSrcDir))
@@ -465,6 +909,91 @@ void PrintHelp()
 int main(int argc, char* argv[])
 {
     /*
+    std::ifstream inWadStream(R"(C:\Users\abhin\OneDrive\Desktop\r_heroa00.wad)", std::ios::binary | std::ios::in);
+    inWadStream.seekg(0, std::ios::end);
+    size_t endd = inWadStream.tellg();
+
+    std::stringstream wadStream;
+    byte* wadBytes = new byte[endd];
+    inWadStream.seekg(0, std::ios::beg);
+    inWadStream.read((char*)wadBytes, endd);
+    wadStream.write((char*)wadBytes, endd);
+    delete[] wadBytes;
+    inWadStream.close();
+
+    WadFile srcWad;
+    srcWad.Read(std::filesystem::path(R"(C:\Users\abhin\OneDrive\Desktop\r_heroa00.wad)"));
+    std::stringstream test;
+    srcWad.GetBuffer(6552, test);
+
+    test.seekp(0, std::ios::end);
+    byte* bytes = new byte[50];
+    std::fill(bytes, bytes + 50, 12);
+    test.write((char*)bytes, 50);
+    test.seekg(0, std::ios::end);
+    size_t size = test.tellg();
+
+    size_t cnt = 0;
+    wadStream.seekg(0, ios::end);
+    size_t end = wadStream.tellg();
+
+    uint64_t pad = 0;
+    wadStream.seekg(0, ios::beg);
+    while (wadStream.tellg() < end)
+    {
+        WadFile::FileDesc entry;
+        wadStream.read((char*)&entry.group, sizeof(uint16_t));
+        wadStream.read((char*)&entry.type, sizeof(uint16_t));
+        wadStream.seekp((size_t)wadStream.tellg());
+        wadStream.read((char*)&entry.size, sizeof(uint32_t));
+        if (cnt == 6552)
+        {
+            uint32_t tempSize = uint32_t(size);
+            wadStream.write((char*)&tempSize, sizeof(tempSize));
+        }
+        wadStream.seekg(0x10, ios::cur);
+        char name[0x38];
+        wadStream.read(name, sizeof(name));
+        entry.name = string(name);
+        wadStream.seekg(0x10, ios::cur);
+        if (entry.size != 0)
+        {
+            entry.offset = static_cast<uint32_t>(wadStream.tellg());
+            wadStream.seekg(entry.size, ios::cur);
+            pad = wadStream.tellg();
+            pad = (pad + 15) & (~15);
+            wadStream.seekg(pad, ios::beg);
+            if (cnt == 6552)
+            {
+                size_t forwardSize = end - pad;
+                byte* forwardBytes = new byte[forwardSize];
+                wadStream.read((char*)forwardBytes, forwardSize);
+                byte* replacementBytes = new byte[(size + 15) & (~15)](0); //padded 0
+                test.seekg(0, std::ios::beg);
+                test.read((char*)replacementBytes, size);
+                wadStream.seekp(entry.offset);
+                wadStream.write((char*)replacementBytes, (size + 15) & (~15));
+                wadStream.write((char*)forwardBytes, forwardSize);
+                end = wadStream.tellp();
+                wadStream.seekg(entry.offset + (size + 15) & (~15), std::ios::beg);
+                delete[] forwardBytes;
+                delete[] replacementBytes;
+            }
+            cnt++;
+        }
+    }
+
+    std::ofstream outWadStream(R"(C:\Users\abhin\OneDrive\Desktop\test.wad)", std::ios::binary | std::ios::out);
+    outWadStream.seekp(0, std::ios::beg);
+    wadStream.seekg(0, std::ios::end);
+    size_t outSize = wadStream.tellg();
+    byte* outBytes = new byte[outSize];
+    wadStream.seekg(0, std::ios::beg);
+    wadStream.read((char*)outBytes, outSize);
+    outWadStream.write((char*)outBytes,outSize);
+    outWadStream.close();
+    */
+    /*
     for (int i = 0; i < argc; i++)
     {
         printf("arg[%d]: %s\n", i, argv[i]);
@@ -504,6 +1033,7 @@ int main(int argc, char* argv[])
             cout << "  -o, --outpath <outpath>  Output directory.\n";
             cout << "  -e, --extract            Extract all files from .wad.\n";
             cout << "  -m, --mesh               Export all meshes from .wad.\n";
+            cout << "  -i, --import             Import all meshes into .wad.\n";
             cout << "  -t, --texture            Export all textures from .wad.\n";
             cout << "  -d, --dds                Export Textures in DDS Format.\n";
             cout << "  -h, --help               Show help and usage information.\n";
@@ -520,6 +1050,7 @@ int main(int argc, char* argv[])
         bool mesh = false;
         bool texture = false;
         bool extract = false;
+        bool imp = false;
         bool dds = false;
         for (int i = 2; i < argc; i++)
         {
@@ -561,6 +1092,10 @@ int main(int argc, char* argv[])
             {
                 extract = true;
             }
+            else if (op == "-i" || op == "--import")
+            {
+                imp = true;
+            }
             else if (op == "-m" || op == "--mesh")
             {
                 mesh = true;
@@ -580,17 +1115,35 @@ int main(int argc, char* argv[])
                 return -1;
             }
         }
-        if (!mesh && !texture && !extract)
+        if (!mesh && !texture && !extract && !imp)
         {
-            Utils::Logger::Error("\nExport file type option not specified");
+            Utils::Logger::Error("\nExport/Import task not specified");
             LogHelp();
             return -1;
         }
-        if (path.empty() || !path.is_absolute() || !std::filesystem::exists(path) || !std::filesystem::is_regular_file(path) || path.extension().string() != ".wad")
+        if (imp && (mesh || texture || extract))
         {
-            Utils::Logger::Error(("\nInvalid/Unspecified .wad file path: " + path.string()).c_str());
+            Utils::Logger::Error("\nCan't Export and Import at the same time, specfiy only one at a time");
             LogHelp();
             return -1;
+        }
+        if (imp)
+        {
+            if (path.empty() || !path.is_absolute() || !std::filesystem::exists(path) || !std::filesystem::is_directory(gamedir))
+            {
+                Utils::Logger::Error(("\nInvalid/Unspecified Import Folder path: " + path.string()).c_str());
+                LogHelp();
+                return -1;
+            }
+        }
+        else
+        {
+            if (path.empty() || !path.is_absolute() || !std::filesystem::exists(path) || !std::filesystem::is_regular_file(path) || path.extension().string() != ".wad")
+            {
+                Utils::Logger::Error(("\nInvalid/Unspecified .wad file path: " + path.string()).c_str());
+                LogHelp();
+                return -1;
+            }
         }
         if (gamedir.empty() || !gamedir.is_absolute() || !std::filesystem::exists(gamedir) || !std::filesystem::is_directory(gamedir))
         {
@@ -673,6 +1226,21 @@ int main(int argc, char* argv[])
             {
                 Utils::Logger::Error("\nTextures export Failed.");
             }
+        }
+        if (imp)
+        {
+            std::filesystem::recursive_directory_iterator dir(gamedir);
+            for (const std::filesystem::directory_entry& entry : dir)
+            {
+                if (entry.path().extension().string() == ".wad" && entry.path().filename().stem().string() == path.filename().string())
+                {
+                    ImportModels(path, entry.path());
+                    return 0;
+                }
+            }
+            Utils::Logger::Error("\nWad File by Import Folder Name Not Present in GameDir.");
+            Utils::Logger::Error("\nMeshes Import Failed.");
+            return -1;
         }
         return 0;
     }

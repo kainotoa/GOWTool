@@ -37,13 +37,13 @@ bool WadFile::Read(const std::filesystem::path& filepath)
 }
 bool WadFile::GetBuffer(const uint32_t& entryIdx,uint8_t* output)
 {
-	/*
-	if (entryIdx >= _Entries.size())
+	
+	if (entryIdx >= _FileEntries.size())
 		return false;
-	output = new uint8_t[_Sizes[entryIdx]];
-	fs.seekg(_Offsets[entryIdx], std::ios::beg);
-	fs.read((char*)output, _Sizes[entryIdx]);
-	*/
+	output = new uint8_t[_FileEntries[entryIdx].size];
+	fs.seekg(_FileEntries[entryIdx].offset, std::ios::beg);
+	fs.read((char*)output, _FileEntries[entryIdx].size);
+	
 	return true;
 	
 }

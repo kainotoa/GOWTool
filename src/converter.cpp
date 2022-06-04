@@ -318,9 +318,9 @@ size_t ConvertDDSToGnf(const byte* ddssrc,const size_t &ddssize, byte*& gnfout)
 		throw std::exception("Format not implemented!");
 		break;
 	}
-	gnfImg.header.pitch = BitHacks::RoundUpTo2(meta.width);
-	gnfImg.header.pitch = pixbl == 1 ? std::max<size_t>(gnfImg.header.pitch, 16) : std::max<size_t>(gnfImg.header.pitch, 32);
-	gnfImg.header.pitch--;
+	uint32_t tempPitch = BitHacks::RoundUpTo2(meta.width);
+	tempPitch = pixbl == 1 ? std::max<size_t>(tempPitch, 16) : std::max<size_t>(tempPitch, 32);
+	gnfImg.header.pitch = tempPitch - 1;
 
 	gnfImg.header.dataSize = 0;
 	for (uint32_t i = 0; i < meta.mipLevels; i++)

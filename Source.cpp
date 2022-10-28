@@ -384,7 +384,7 @@ bool ImportAllGnf(const std::filesystem::path& gnfSrcDir, vector<Texpack*>& texp
                                     wad.fs.write((char*)&byteptr, sizeof byteptr);
                                     byteptr = 0xB;
                                     wad.fs.write((char*)&byteptr, sizeof byteptr);
-                                    byteptr = 0xAB;
+                                    byteptr = 0x2B;
                                     wad.fs.write((char*)&byteptr, sizeof byteptr);
                                     wad.fs.write((char*)&byteptr, sizeof byteptr);
                                     wad.fs.write((char*)&byteptr, sizeof byteptr);

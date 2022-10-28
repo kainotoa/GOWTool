@@ -6,7 +6,7 @@ bool WadFile::Read(const std::filesystem::path& filepath)
 	if (!std::filesystem::exists(filepath))
 		return false;
 
-	fs.open(filepath.string(), ios::in | ios::binary);
+	fs.open(filepath.string(), ios::in | ios::binary | ios::out);
 	fs.seekg(0, ios::end);
 	size_t end = fs.tellg();
 

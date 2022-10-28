@@ -166,6 +166,7 @@
     <ClCompile Include="src\Texpack.cpp" />
     <ClCompile Include="src\utils.cpp" />
     <ClCompile Include="src\Wad.cpp" />
+    <ClCompile Include="src\wadbase.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\anims.h" />
@@ -185,6 +186,7 @@
     <ClInclude Include="inc\utils.h" />
     <ClInclude Include="inc\Wad.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="inc\WadBase.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="DirectXTex\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">

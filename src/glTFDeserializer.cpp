@@ -147,6 +147,8 @@ bool GetRawMeshesFromGLTF(const Document& document, const GLTFResourceReader& re
     // Use the resource reader to get each mesh primitive's position data
     for (const auto& mesh : document.meshes.Elements())
     {
+//        if (mesh.name != "submesh_0029_0")
+//            continue;
         RawMeshContainer meshContainer;
         meshContainer.name = mesh.name;
         for (const auto& meshPrimitive : mesh.primitives)

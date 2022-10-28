@@ -437,7 +437,7 @@ bool MGDefinition::WriteMG(const std::vector<MeshInfo>& meshinfos, std::stringst
 				file.read((char*)&vertC, sizeof(uint32_t));
 				info.vertCount = vertC;
 
-				vertC = newinfo.vertCount;
+				//vertC = newinfo.vertCount;
 				if (yes)
 					file.write((char*)&vertC, sizeof(uint32_t));
 
@@ -445,6 +445,7 @@ bool MGDefinition::WriteMG(const std::vector<MeshInfo>& meshinfos, std::stringst
 				file.read((char*)&indC, sizeof(uint32_t));
 				info.indCount = indC;
 				indC = newinfo.indCount;
+
 				if (yes)
 					file.write((char*)&indC, sizeof(uint32_t));
 

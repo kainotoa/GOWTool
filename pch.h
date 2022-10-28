@@ -12,6 +12,7 @@
 using std::ios;
 using std::ifstream;
 using std::ofstream;
+using std::fstream;
 using std::string;
 using std::vector;
 using std::ostream;

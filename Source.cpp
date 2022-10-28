@@ -12,9 +12,9 @@
 #include "glTFDeserializer.h"
 #include <map>
 
-bool ImportModels(const std::filesystem::path& wadDir, const std::filesystem::path& wadPath)
+bool ImportModels(const std::filesystem::path& wadDir, const std::filesystem::path& wadPath, vector<Lodpack*>& lodpacks)
 {
-    std::map<uint64_t, std::fstream*> buffersHashmap;
+    std::map<uint64_t, std::stringstream*> buffersHashmap;
 
     std::ifstream inWadStream(wadPath.string(), std::ios::binary | std::ios::in);
     inWadStream.seekg(0, std::ios::end);
@@ -132,8 +132,12 @@ bool ImportModels(const std::filesystem::path& wadDir, const std::filesystem::pa
                 string subname = "submesh_" + string(buf) + "_" + std::to_string(oldMeshInfos[j].LODlvl);
                 if (subname == inMeshes[i].name)
                 {
-                    std::fstream* buffer;
+                    std::stringstream* buffer;
                     MeshInfo newMeshInfo = oldMeshInfos[j];
+
+                    if (inMeshes[i].VertCount > newMeshInfo.vertCount || inMeshes[i].IndCount > newMeshInfo.indCount)
+                        break;
+
                     newMeshInfo.name = subname;
                     if (newMeshInfo.Hash != 0)
                     {
@@ -141,23 +145,25 @@ bool ImportModels(const std::filesystem::path& wadDir, const std::filesystem::pa
                             buffer = buffersHashmap.at(newMeshInfo.Hash);
                         else
                         {
-                            std::filesystem::path binPath = wadDir.parent_path() / (std::to_string(newMeshInfo.Hash) + ".bin");
-                            buffer = new std::fstream(binPath, std::ios::binary | std::ios::out);
+                            buffer = new std::stringstream(std::ios::binary | std::ios::out | std::ios::in);
+                            for (int k = 0; k < lodpacks.size(); k++)
+                            {
+                                if (lodpacks[k]->GetBuffer(newMeshInfo.Hash, *buffer))
+                                    break;
+                            }
                             buffersHashmap.insert({ newMeshInfo.Hash, buffer });
                         }
-                        buffer->seekg(std::ios::beg);
-                        size_t writeOff = buffer->tellg();
+                        size_t writeOff = newMeshInfo.vertexOffset;
                         WriteRawMeshToStream(newMeshInfo, inMeshes[i], *buffer, writeOff);
+                        newMeshInfo.vertCount = oldMeshInfos[j].vertCount;
                         newMeshInfos.push_back(newMeshInfo);
-
-                        buffer->close();
                     }
                     else
                     {
                         size_t writeOff = newMeshInfo.vertexOffset;
                         WriteRawMeshToStream(newMeshInfo, inMeshes[i], meshBuffStream, writeOff);
+                        newMeshInfo.vertCount = oldMeshInfos[j].vertCount;
                         newMeshInfos.push_back(newMeshInfo);
-
                     }
                     break;
                 }
@@ -183,9 +189,27 @@ bool ImportModels(const std::filesystem::path& wadDir, const std::filesystem::pa
         delete[] buffBytes;
     }
     wadStream.close();
+
+    //std::filesystem::path outlodpackPath = wadDir.parent_path() / (wadDir.stem().string() + ".lodpack");
+
+    //Lodpack outlodpack;
+    //outlodpack.Write(outlodpackPath, buffersHashmap);
+
+    for (auto itr = buffersHashmap.begin(); itr != buffersHashmap.end(); itr++)
+    {
+        for (int k = 0; k < lodpacks.size(); k++)
+        {
+            if (lodpacks[k]->SetBuffer(itr->first, *itr->second))
+                break;
+        }
+    }
+    for (int k = 0; k < lodpacks.size(); k++)
+    {
+        lodpacks[k]->file.close();
+    }
     return true;
 }
-bool ImportAllGnf(const std::filesystem::path& gnfSrcDir, vector<Texpack*>& texpacks)
+bool ImportAllGnf(const std::filesystem::path& gnfSrcDir, vector<Texpack*>& texpacks, const std::filesystem::path& gamedir)
 {
     if (gnfSrcDir.empty() || !gnfSrcDir.is_absolute() || !std::filesystem::exists(gnfSrcDir) || !std::filesystem::is_directory(gnfSrcDir))
     {
@@ -316,6 +340,83 @@ bool ImportAllGnf(const std::filesystem::path& gnfSrcDir, vector<Texpack*>& texp
     if (gnfImages.size() != gnfHashes.size())
         return false;
 
+    {
+        std::filesystem::recursive_directory_iterator dir1(gamedir);
+        for (const std::filesystem::directory_entry& entry : dir1)
+        {
+            if (entry.path().extension().string() == ".wad")
+            {
+                WadFile wad;
+                wad.Read(entry.path());
+                for (int i = 0; i < wad._FileEntries.size(); i++)
+                {
+                    if ((int)wad._FileEntries[i].type == 32801)
+                    {
+                        std::stringstream s;
+                        std::string name = wad._FileEntries[i].name.substr(3);
+                        s << std::hex << name.substr(name.find_last_of("_") + 1, 16);
+                        uint64_t hash = 0;
+                        s >> hash;
+                        for (int j = 0; j < gnfHashes.size(); j++)
+                        {
+                            if (hash == gnfHashes[j])
+                            {
+                                size_t offptr = wad._FileEntries[i].offset;
+                                offptr += 0x47;
+                                byte byteptr = 0xE;
+                                wad.fs.seekp(offptr, std::ios::beg);
+
+                                wad.fs.write((char*)&byteptr, sizeof byteptr);
+
+                                uint16_t maxRes = 8192;
+
+                                wad.fs.write((char*)&maxRes, sizeof maxRes);
+                                wad.fs.write((char*)&maxRes, sizeof maxRes);
+
+                                wad.fs.seekp(0xA, std::ios::cur);
+
+                                switch (gnfImages[j]->header.format)
+                                {
+                                case Gnf::Format::FormatBC1:
+                                case Gnf::Format::Format8:
+                                case Gnf::Format::FormatBC4:
+                                    byteptr = 0x3;
+                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
+                                    byteptr = 0xB;
+                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
+                                    byteptr = 0xAB;
+                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
+                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
+                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
+                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
+                                    break;
+                                case Gnf::Format::FormatBC2:
+                                case Gnf::Format::FormatBC3:
+                                case Gnf::Format::FormatBC7:
+                                case Gnf::Format::FormatBC5:
+                                case Gnf::Format::FormatBC6:
+                                    byteptr = 0x6;
+                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
+                                    byteptr = 0x16;
+                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
+                                    byteptr = 0x56;
+                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
+                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
+                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
+                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
+                                    break;
+                                default:
+                                    throw std::exception("Format not implemented!");
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                wad.fs.close();
+            }
+        }
+    }
     std::filesystem::path outTexpackPath = gnfSrcDir.parent_path() / (gnfSrcDir.filename().string() + ".texpack");
     std::filesystem::path outTexpackTocPath = gnfSrcDir.parent_path() / (gnfSrcDir.filename().string() + ".texpack.toc");
 
@@ -636,14 +737,11 @@ void PrintHelp()
     cout << "\nOptions:\n";
     cout << "  -h, --help  Show help and usage information.\n";
 }
+
 int main(int argc, char* argv[])
 {
-    /*
-    for (int i = 0; i < argc; i++)
-    {
-        printf("arg[%d]: %s\n", i, argv[i]);
-    }
-    */
+    //ImportModels(std::filesystem::path(R"(C:\Users\abhin\OneDrive\Desktop\New folder (6))"), std::filesystem::path(R"(C:\Users\abhin\OneDrive\Desktop\r_baldur00.wad)"));
+
     if (argc < 2)
     {
         Utils::Logger::Error("Required argument was not provided.\n");
@@ -828,7 +926,8 @@ int main(int argc, char* argv[])
             {
                 if (entry.path().extension().string() == ".lodpack")
                 {
-                    Lodpack* pack = new Lodpack(entry.path().string());
+                    Lodpack* pack = new Lodpack();
+                    pack->Read(entry.path().string());
                     lodpacks.push_back(pack);
                 }
             }
@@ -875,11 +974,28 @@ int main(int argc, char* argv[])
         if (imp)
         {
             std::filesystem::recursive_directory_iterator dir(gamedir);
+            std::vector<Lodpack*> lodpacks;
             for (const std::filesystem::directory_entry& entry : dir)
+            {
+                if (entry.path().extension().string() == ".lodpack")
+                {
+                    Lodpack* pack = new Lodpack();
+                    pack->Read(entry.path().string());
+                    lodpacks.push_back(pack);
+                }
+            }
+            if (lodpacks.size() < 1)
+            {
+                Utils::Logger::Error("\nspecified gamedir(including sub-directories) doesn't contain any .lodpack files, export failed");
+                return -1;
+            }
+
+            std::filesystem::recursive_directory_iterator dir1(gamedir);
+            for (const std::filesystem::directory_entry& entry : dir1)
             {
                 if (entry.path().extension().string() == ".wad" && entry.path().filename().stem().string() == path.filename().string())
                 {
-                    ImportModels(path, entry.path());
+                    ImportModels(path, entry.path(), lodpacks);
                     return 0;
                 }
             }
@@ -1037,7 +1153,7 @@ int main(int argc, char* argv[])
                 Utils::Logger::Error("\nspecified gamedir(including sub-directories) doesn't contain any .texpack files, import failed");
                 return -1;
             }
-            if (ImportAllGnf(path,texpacks))
+            if (ImportAllGnf(path,texpacks, gamedir))
             {
                 Utils::Logger::Success("\nSuccessfully Imported all and packed textures to .texpack ");
                 return 0;

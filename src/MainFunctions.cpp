@@ -270,25 +270,46 @@ RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::stringstream& file,std:
 }
 void WriteRawMeshToStream(MeshInfo& meshInfo, const RawMeshContainer& rawMesh, std::iostream& outStream, const size_t& streamWriteOff)
 {
+    if (rawMesh.VertCount > meshInfo.vertCount)
+        return;
+    if (rawMesh.IndCount > meshInfo.indCount)
+        return;
+    outStream.seekp(streamWriteOff);
+    //for (size_t idx = 0; idx < meshInfo.bufferOffset.size(); idx++)
+    //{
+    //    if (idx == 0)
+    //        meshInfo.bufferOffset[idx] = streamWriteOff;
+    //    else
+    //    {
+    //        meshInfo.bufferOffset[idx] = meshInfo.bufferOffset[idx - 1] + ((meshInfo.vertCount * meshInfo.bufferStride[idx - 1] + 15) & ~(15));
+    //    }
+    //    // Allocation
+    //    byte b = 0;
+    //    for (size_t cnt = 0; cnt < ((meshInfo.vertCount * meshInfo.bufferStride[idx] + 15) & ~(15)); cnt++)
+    //        outStream.write((char*)&b, sizeof(b));
+    //}
+
+    //meshInfo.vertexOffset = meshInfo.bufferOffset[0];
+    //meshInfo.indicesOffset = meshInfo.bufferOffset[meshInfo.bufferOffset.size() - 1] + ((meshInfo.vertCount * meshInfo.bufferStride[meshInfo.bufferOffset.size() - 1] + 15) & ~(15));
+
+    //for (size_t v = 0; v < meshInfo.indCount; v++)
+    //{
+    //    uint16_t b = 0;
+    //    outStream.write((char*)&b, sizeof b);
+    //}
+
+    //size_t indSize = meshInfo.indCount * sizeof(uint16_t);
+    //size_t padSize = ((indSize + 15) & (~15)) - indSize;
+    //if (padSize > 0)
+    //{
+    //    byte* padBytes = new byte[padSize];
+    //    std::fill(padBytes, padBytes + padSize, 0);
+    //    outStream.write((char*)padBytes, padSize);
+    //    delete[] padBytes;
+    //}
+
     meshInfo.vertCount = rawMesh.VertCount;
     meshInfo.indCount = rawMesh.IndCount;
-    outStream.seekp(streamWriteOff);
-    for (size_t idx = 0; idx < meshInfo.bufferOffset.size(); idx++)
-    {
-        if (idx == 0)
-            meshInfo.bufferOffset[idx] = streamWriteOff;
-        else
-        {
-            meshInfo.bufferOffset[idx] = meshInfo.bufferOffset[idx - 1] + ((meshInfo.vertCount * meshInfo.bufferStride[idx - 1] + 15) & ~(15));
-        }
-        // Allocation
-        byte b = 0;
-        for (size_t cnt = 0; cnt < ((meshInfo.vertCount * meshInfo.bufferStride[idx] + 15) & ~(15)); cnt++)
-            outStream.write((char*)&b, sizeof(b));
-    }
-    meshInfo.vertexOffset = meshInfo.bufferOffset[0];
-    meshInfo.indicesOffset = meshInfo.bufferOffset[meshInfo.bufferOffset.size() - 1] + ((meshInfo.vertCount * meshInfo.bufferStride[meshInfo.bufferOffset.size() - 1] + 15) & ~(15));
-
 
     Vec3 Max = Vec3(std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min());
     Vec3 Min = Vec3(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
@@ -515,14 +536,5 @@ void WriteRawMeshToStream(MeshInfo& meshInfo, const RawMeshContainer& rawMesh, s
     for (size_t v = 0; v < meshInfo.indCount; v++)
     {
         outStream.write((char*)&rawMesh.indices[v], sizeof(uint16_t));
-    }
-    size_t indSize = meshInfo.indCount * sizeof(uint16_t);
-    size_t padSize = ((indSize + 15) & (~15)) - indSize;
-    if (padSize > 0)
-    {
-        byte* padBytes = new byte[padSize];
-        std::fill(padBytes, padBytes + padSize, 0);
-        outStream.write((char*)padBytes, padSize);
-        delete[] padBytes;
     }
 }

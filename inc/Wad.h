@@ -24,6 +24,5 @@ struct WadFile
 	static void WriteBufferToWad(std::iostream& outWadStream, const byte* buffer, const size_t& bufferSize, const size_t& bufferIdx);
 	bool GetBuffer(const uint32_t& entryIdx, uint8_t* output);
 	bool GetBuffer(const uint32_t& entryIdx, std::iostream& outstream);
-private:
-	ifstream fs;
+	fstream fs;
 };

@@ -383,7 +383,8 @@ void WriteRawMeshToStream(MeshInfo& meshInfo, const RawMeshContainer& rawMesh, s
                 uint32_t TanWrite32;
                 for (size_t v = 0; v < meshInfo.vertCount; v++)
                 {
-                    outStream.seekp(meshInfo.Components[t].offset + meshInfo.bufferStride[meshInfo.Components[t].bufferIndex] * v);
+                    outStream.seekp(meshInfo.bufferOffset[meshInfo.Components[t].bufferIndex] + meshInfo.bufferStride[meshInfo.Components[t].bufferIndex] * v + meshInfo.Components[t].offset);
+
                     // Worry about normalization and magnitude when its 0;
                     rawMesh.tangents[v].normalize();
                     auto vec = Vec4(rawMesh.tangents[v].X, rawMesh.tangents[v].Y, rawMesh.tangents[v].Z, 1.f);

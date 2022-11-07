@@ -136,7 +136,10 @@ bool ImportModels(const std::filesystem::path& wadDir, const std::filesystem::pa
                     MeshInfo newMeshInfo = oldMeshInfos[j];
 
                     if (inMeshes[i].VertCount > newMeshInfo.vertCount || inMeshes[i].IndCount > newMeshInfo.indCount)
+                    {
                         break;
+                        std::cout << "";
+                    }
 
                     newMeshInfo.name = subname;
                     if (newMeshInfo.Hash != 0)

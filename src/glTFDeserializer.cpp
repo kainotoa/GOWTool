@@ -225,16 +225,40 @@ bool GetRawMeshesFromGLTF(const Document& document, const GLTFResourceReader& re
             {
                 const Accessor& accessor = document.accessors.Get(accessorId);
 
-                const auto data = resourceReader.ReadBinaryData<uint16_t>(document, accessor);
-                meshContainer.joints = new uint16_t*[meshContainer.VertCount];
-                for (uint32_t i = 0; i < meshContainer.VertCount; i++)
-                    meshContainer.joints[i] = new uint16_t[4];
-                for (uint32_t i = 0; i < meshContainer.VertCount; i++)
+                switch (accessor.componentType)
                 {
-                    meshContainer.joints[i][0] = reTargIdxLookUp[data[i * 4]];
-                    meshContainer.joints[i][1] = reTargIdxLookUp[data[i * 4 + 1]];
-                    meshContainer.joints[i][2] = reTargIdxLookUp[data[i * 4 + 2]];
-                    meshContainer.joints[i][3] = reTargIdxLookUp[data[i * 4 + 3]];
+                case COMPONENT_UNSIGNED_BYTE:
+                {
+                    const auto data = resourceReader.ReadBinaryData<uint8_t>(document, accessor);
+                    meshContainer.joints = new uint16_t * [meshContainer.VertCount];
+                    for (uint32_t i = 0; i < meshContainer.VertCount; i++)
+                        meshContainer.joints[i] = new uint16_t[4];
+                    for (uint32_t i = 0; i < meshContainer.VertCount; i++)
+                    {
+                        meshContainer.joints[i][0] = reTargIdxLookUp[data[i * 4]];
+                        meshContainer.joints[i][1] = reTargIdxLookUp[data[i * 4 + 1]];
+                        meshContainer.joints[i][2] = reTargIdxLookUp[data[i * 4 + 2]];
+                        meshContainer.joints[i][3] = reTargIdxLookUp[data[i * 4 + 3]];
+                    }
+                }
+                break;
+                case COMPONENT_UNSIGNED_SHORT:
+                {
+                    const auto data = resourceReader.ReadBinaryData<uint16_t>(document, accessor);
+                    meshContainer.joints = new uint16_t * [meshContainer.VertCount];
+                    for (uint32_t i = 0; i < meshContainer.VertCount; i++)
+                        meshContainer.joints[i] = new uint16_t[4];
+                    for (uint32_t i = 0; i < meshContainer.VertCount; i++)
+                    {
+                        meshContainer.joints[i][0] = reTargIdxLookUp[data[i * 4]];
+                        meshContainer.joints[i][1] = reTargIdxLookUp[data[i * 4 + 1]];
+                        meshContainer.joints[i][2] = reTargIdxLookUp[data[i * 4 + 2]];
+                        meshContainer.joints[i][3] = reTargIdxLookUp[data[i * 4 + 3]];
+                    }
+                }
+                break;
+                default:
+                    throw GLTFException("Unsupported accessor ComponentType");
                 }
             }
             if (meshPrimitive.TryGetAttributeAccessorId(ACCESSOR_WEIGHTS_0, accessorId))

@@ -1,38 +1,39 @@
 #include "pch.h"
 #include "Wad.h"
 
-bool WadFile::Read(const std::filesystem::path& filepath)
+bool WADArchive::Read(std::shared_ptr<std::iostream> instream)
 {
-	if (!std::filesystem::exists(filepath))
-		return false;
+    if (instream == nullptr || instream->fail())
+        return false;
 
-	fs.open(filepath.string(), ios::in | ios::binary | ios::out);
-	fs.seekg(0, ios::end);
-	size_t end = fs.tellg();
+    stream = instream;
 
-	uint64_t pad = 0;
-	fs.seekg(0, ios::beg);
-	while (fs.tellg() < end)
-	{
-		FileDesc entry;
-		fs.read((char*)&entry.group, sizeof(uint16_t));
-		fs.read((char*)&entry.type, sizeof(uint16_t));
-		fs.read((char*)&entry.size, sizeof(uint32_t));
-		fs.seekg(0x10, ios::cur);
-		char name[0x38];
-		fs.read(name, sizeof(name));
-		entry.name = string(name);
-		fs.seekg(0x10, ios::cur);
-		if (entry.size != 0)
-		{
-			entry.offset = static_cast<uint32_t>(fs.tellg());
-			_FileEntries.push_back(entry);
-			fs.seekg(entry.size, ios::cur);
-			pad = fs.tellg();
-			pad = (pad + 15) & (~15);
-			fs.seekg(pad, ios::beg);
-		}
-	}
+    stream->seekg(0, std::ios::end);
+    if (stream->tellg() < sizeof _header);
+    return false;
+
+    stream->seekg(0, std::ios::beg);
+    stream->read((char*)&_header, sizeof _header);
+
+    if (_header.magic != 0x434F5457)
+        return false;
+    if (_header.ver != 0x2)
+        return false;
+
+    if (_header.fileCount < 1)
+        return true;
+
+    stream->seekg(0, std::ios::end);
+
+    if (stream->tellg() < sizeof _header);
+    return false;
+    _FileEntries = vector<FileDesc>(_header.fileCount);
+
+
+    for (uint32_t i = 0; i < _header.fileCount; i++)
+    {
+        stream.read((char*)&_FileEntries[i], sizeof FileDesc);
+    }
 	return true;
 }
 bool WadFile::GetBuffer(const uint32_t& entryIdx,uint8_t* output)

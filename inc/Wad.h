@@ -23,13 +23,13 @@ public:
 		uint32_t unk1 = 0;
 		uint32_t unk2 = 0;
 
+		uint32_t block0Size = 0;
 		uint32_t block1Size = 0;
 		uint32_t block2Size = 0;
-		uint32_t block3Size = 0;
 
 		uint8_t unk3[20] = {0};
 
-		uint32_t block4Size = 0;;
+		uint32_t block8Size = 0;
 
 		uint32_t unk4 = 0;
 		uint32_t unk5 = 0;

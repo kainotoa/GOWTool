@@ -3,6 +3,8 @@
 #include <filesystem>
 #include <iomanip>
 #include <queue>
+#include <map>
+#include <cassert>
 
 WADArchive::WADArchive()
 {
@@ -52,372 +54,138 @@ bool WADArchive::Read(std::shared_ptr<std::iostream> instream)
     }
     _baseOffset = stream->tellg();
 
-    size_t size = 0;
-
-    size_t block0Offset = _baseOffset;
-    size_t block1Offset = 0;
-    size_t block2Offset = 0;
-    size_t block8Offset = 0;
-
-    for (int i = _header.fileCount - 1; i >= 0; i--)
-    {
-        if (_fileEntries[i].blockBitSet == 0)
-        {
-            block1Offset = _fileEntries[i].offset + _fileEntries[i].size;
-            break;
-        }
-    }
-
-    block1Offset += block0Offset;
-
-    for (int i = _header.fileCount - 1; i >= 0; i--)
-    {
-        if (_fileEntries[i].blockBitSet == 1)
-        {
-            block2Offset = _fileEntries[i].offset + _fileEntries[i].size;
-            break;
-        }
-    }
-
-    block2Offset += block1Offset;
-    for (int i = _header.fileCount - 1; i >= 0; i--)
-    {
-        if (_fileEntries[i].blockBitSet == 2)
-        {
-            block8Offset = _fileEntries[i].offset + _fileEntries[i].size;
-            break;
-        }
-    }
-    block8Offset += block2Offset;
-
-    size_t autopad_buffer1= 0;
-    size_t autopad_buffer2 = 0;
-    size_t autopad_buffer3 = 0;
-    size_t autopad_buffer4 = 0;
-
-    int cnt = 0;
-    //std::fstream ss(R"(D:\gowr test\test1.txt)", std::ios::out);
-    for (int i = 0; i < _header.fileCount; i++)
-    {
-        cout.width(56); cout << std::left << _fileEntries[i].nameStr();
-
-        cout.width(4); cout << std::left << (int)_fileEntries[i].blockBitSet;
-     
-        cout.width(10); cout << std::left << (int)_fileEntries[i].type;
-
-        cout << "\n";
-        //if (_fileEntries[i].blockBitSet == 0)
-        //{
-        //    if ((i - 1) >= 0 && _fileEntries[i - 1].nameStr() == "autopad")
-        //        autopad_buffer1 += _fileEntries[i - 1].size;
-        //    if ((i + 1) < _header.fileCount && _fileEntries[i + 1].nameStr() == "autopad")
-        //        autopad_buffer1 += _fileEntries[i + 1].size;
-        //}
-        //if (_fileEntries[i].blockBitSet == 8)
-        //    cout << _fileEntries[i].nameStr() << "\n";
-        //if (_fileEntries[i].blockBitSet == 0 && _fileEntries[i].offset == 854320)
-        //    break;
-        //if (_fileEntries[i].blockBitSet == 0)
-        //    cnt++;
-        ////if (_fileEntries[i].nameStr() == "autopad")
-        ////{
-        ////    switch (_fileEntries[i - 2].blockBitSet)
-        ////    {
-        ////    case 0:
-        ////        autopad_buffer1 += _fileEntries[i].size;
-        ////        break;
-        ////    case 1:
-        ////        autopad_buffer2 += _fileEntries[i].size;
-        ////        break;
-        ////    case 2:
-        ////        autopad_buffer3 += _fileEntries[i].size;
-
-        ////        break;
-        ////    case 8:
-        ////        autopad_buffer4 += _fileEntries[i].size;
-
-        ////        break;
-        ////    default:
-        ////        break;
-        ////    }
-        ////}
-        //if (_fileEntries[i].nameStr() == "autopad")
-        //{
-        //    cnt++;
-        //}
-        //ss.width(56); ss << std::left << _fileEntries[i].nameStr();
-        //ss.width(10); ss << std::left <<_fileEntries[i].offset;
-        //ss.width(10); ss << std::left <<_fileEntries[i].size;
-
-        //for (int j = 0; j < 0x1F; j++)
-        //{
-        //    ss.width(4); ss << std::left <<uint16_t(_fileEntries[i].unk2[j]);
-        //}
-        //ss.width(4); ss << std::left << (int)_fileEntries[i].blockBitSet;
-        //for (int j = 0; j < 0x8; j++)
-        //{
-        //    ss.width(4); ss << std::left <<(int)_fileEntries[i].unk3[j];
-        //}
-        //for (int j = 0; j < 0x14; j++)
-        //{
-        //    ss.width(4); ss << std::left << (int)_fileEntries[i].unk4[j];
-        //}
-        //ss << "\n";
-    }
-
     _fileAbsOffsets = vector<size_t>(_header.fileCount);
+
+    vector<uint32_t> sizesPadded(_header.fileCount);
+    std::map<uint8_t, uint32_t> totalSize;
+    
+    totalSize[0] = _header.block0Size;
+    totalSize[1] = _header.block1Size;
+    totalSize[2] = _header.block2Size;
+    totalSize[8] = _header.block8Size;
+
+    for (long long i = _header.fileCount - 1; i >= 0; i--)
+    {
+        if (_fileEntries[i].nameStr() != "autopad")
+        {
+            sizesPadded[i] = totalSize[_fileEntries[i].blockBitSet] - _fileEntries[i].offset;
+            totalSize[_fileEntries[i].blockBitSet] -= sizesPadded[i];
+        }
+    }
 
     std::queue<uint32_t> q;
 
     size_t readOff = _baseOffset;
     
-    size_t corrLastOffsetBitset0 = 0;
-    size_t corrLastOffsetBitset1 = 0;
-    size_t corrLastOffsetBitset2 = 0;
-    size_t corrLastOffsetBitset8 = 0;
-    
-    uint8_t directBitSet = _fileEntries[0].blockBitSet;
-    uint8_t queueBitSet = 1;
-    
-    for (uint32_t i = 1; i < _header.fileCount; i++)
-    {
-        if (directBitSet != _fileEntries[i].blockBitSet)
-        {
-            queueBitSet = _fileEntries[i].blockBitSet;
-            break;
-        }
-    }
+    std::map<uint8_t,uint32_t> bitsetOffs;
+
+    std::map<uint8_t, std::queue<uint32_t>> flushQ;
+ 
     for (uint32_t i = 0; i < _header.fileCount; i++)
     {
         if (_fileEntries[i].nameStr() == "autopad")
         {
-            uint32_t temp = 0;
-            switch (directBitSet)
+            for (auto itr = flushQ.begin(); itr != flushQ.end(); itr++)
             {
-            case 0:
-                temp = corrLastOffsetBitset0;
-                break;
-            case 1:
-                temp = corrLastOffsetBitset1;
-                break;
-            case 2:
-                temp = corrLastOffsetBitset2;
-                break;
-            case 8:
-                temp = corrLastOffsetBitset8;
-                break;
-            default:
-                break;
-            }
-            readOff += temp;
-
-            uint32_t temp2 = 0;
-
-            switch (queueBitSet)
-            {
-            case 0:
-                temp2 = corrLastOffsetBitset0;
-                break;
-            case 1:
-                temp2 = corrLastOffsetBitset1;
-                break;
-            case 2:
-                temp2 = corrLastOffsetBitset2;
-                break;
-            case 8:
-                temp2 = corrLastOffsetBitset8;
-                break;
-            default:
-                break;
-            }
-
-            if (!q.empty())
-            {
-                readOff  -= temp2;
-                temp2 = _fileEntries[q.back()].offset + _fileEntries[q.back()].size;
-
-                while (!q.empty())
+                auto itr1 = itr;
+                itr1++;
+                readOff -= bitsetOffs[itr->first];
+                if (!itr->second.empty())
                 {
-                    _fileAbsOffsets[q.front()] = readOff + _fileEntries[q.front()].offset;
-                    q.pop();
+                        bitsetOffs[itr->first] = _fileEntries[itr->second.back()].offset + _fileEntries[itr->second.back()].size;
+                    if(itr1 == flushQ.end())
+                        bitsetOffs[itr->first] += _fileEntries[itr->second.back()].unk2[24];
                 }
+                while (!itr->second.empty())
+                {
+                    _fileAbsOffsets[itr->second.front()] = readOff + _fileEntries[itr->second.front()].offset;
 
-                readOff += temp2;
+                    itr->second.pop();
+                }
+                readOff += bitsetOffs[itr->first];
             }
-
-            switch (queueBitSet)
-            {
-            case 0:
-                corrLastOffsetBitset0 = temp2;
-                break;
-            case 1:
-                corrLastOffsetBitset1 = temp2;
-                break;
-            case 2:
-                corrLastOffsetBitset2 = temp2;
-                break;
-            case 8:
-                corrLastOffsetBitset8 = temp2;
-                break;
-            default:
-                break;
-            }
-
-            readOff -= temp;
+            flushQ.clear();
             readOff += _fileEntries[i].size;
-        }
-        else if(directBitSet == _fileEntries[i].blockBitSet)
-        {
-            _fileAbsOffsets[i] = readOff + _fileEntries[i].offset;
-
-            switch (directBitSet)
-            {
-            case 0:
-                corrLastOffsetBitset0 = _fileEntries[i].offset + _fileEntries[i].size;
-                break;
-            case 1:
-                corrLastOffsetBitset1 = _fileEntries[i].offset + _fileEntries[i].size;
-                break;
-            case 2:
-                corrLastOffsetBitset2 = _fileEntries[i].offset + _fileEntries[i].size;
-                break;
-            case 8:
-                corrLastOffsetBitset8 = _fileEntries[i].offset + _fileEntries[i].size;
-                break;
-            default:
-                break;
-            }
-        }
-        else if(queueBitSet == _fileEntries[i].blockBitSet)
-        {
-            q.push(i);
         }
         else
         {
-            uint32_t temp = 0;
-            switch (directBitSet)
-            {
-            case 0:
-                temp = corrLastOffsetBitset0;
-                break;
-            case 1:
-                temp = corrLastOffsetBitset1;
-                break;
-            case 2:
-                temp = corrLastOffsetBitset2;
-                break;
-            case 8:
-                temp = corrLastOffsetBitset8;
-                break;
-            default:
-                break;
-            }
-            readOff += temp;
-            
-            uint32_t temp2 = 0;
-
-            switch (queueBitSet)
-            {
-            case 0:
-                temp2 = corrLastOffsetBitset0;
-                break;
-            case 1:
-                temp2 = corrLastOffsetBitset1;
-                break;
-            case 2:
-                temp2 = corrLastOffsetBitset2;
-                break;
-            case 8:
-                temp2 = corrLastOffsetBitset8;
-                break;
-            default:
-                break;
-            }
-
-            if (!q.empty())
-            {
-                readOff -= temp2;
-                temp2 = _fileEntries[q.back()].offset + _fileEntries[q.back()].size;
-
-                while (!q.empty())
-                {
-                    _fileAbsOffsets[q.front()] = readOff + _fileEntries[q.front()].offset;
-                    q.pop();
-                }
-
-                readOff += temp2;
-            }
-
-            switch (queueBitSet)
-            {
-            case 0:
-                corrLastOffsetBitset0 = temp2;
-                break;
-            case 1:
-                corrLastOffsetBitset1 = temp2;
-                break;
-            case 2:
-                corrLastOffsetBitset2 = temp2;
-                break;
-            case 8:
-                corrLastOffsetBitset8 = temp2;
-                break;
-            default:
-                break;
-            }
-
-
-            directBitSet = _fileEntries[i].blockBitSet;
-
-            for(uint32_t j = i + 1; j < _header.fileCount; j++)
-                if (directBitSet != _fileEntries[j].blockBitSet)
-                {
-                    queueBitSet = _fileEntries[j].blockBitSet;
-                    break;
-                }
-
-            switch (directBitSet)
-            {
-            case 0:
-                readOff -= corrLastOffsetBitset0;
-                break;
-            case 1:
-                readOff -= corrLastOffsetBitset1;
-                break;
-            case 2:
-                readOff -= corrLastOffsetBitset2;
-                break;
-            case 8:
-                readOff -= corrLastOffsetBitset8;
-                break;
-            default:
-                break;
-            }
-
-            _fileAbsOffsets[i] = readOff + _fileEntries[i].offset;
-
-            switch (directBitSet)
-            {
-            case 0:
-                corrLastOffsetBitset0 = _fileEntries[i].offset + _fileEntries[i].size;
-                break;
-            case 1:
-                corrLastOffsetBitset1 = _fileEntries[i].offset + _fileEntries[i].size;
-                break;
-            case 2:
-                corrLastOffsetBitset2 = _fileEntries[i].offset + _fileEntries[i].size;
-                break;
-            case 8:
-                corrLastOffsetBitset8 = _fileEntries[i].offset + _fileEntries[i].size;
-                break;
-            default:
-                break;
-            }
+            flushQ[_fileEntries[i].blockBitSet].push(i);
         }
     }
-    //ss.close();
-    return true;
+    {
+        for (auto itr = flushQ.begin(); itr != flushQ.end(); itr++)
+        {
+            readOff -= bitsetOffs[itr->first];
+            if (!itr->second.empty())
+            {
+                bitsetOffs[itr->first] = _fileEntries[itr->second.back()].offset + _fileEntries[itr->second.back()].size;
+            }
+            while (!itr->second.empty())
+            {
+                _fileAbsOffsets[itr->second.front()] = readOff + _fileEntries[itr->second.front()].offset;
 
+                itr->second.pop();
+            }
+            readOff += bitsetOffs[itr->first];
+        }
+    }
+
+    //for (uint32_t i = 0; i < _header.fileCount; i++)
+    //{
+    //    if (_fileEntries[i].nameStr() == "autopad")
+    //    {
+    //        for (auto itr = flushQ.begin(); itr != flushQ.end(); itr++)
+    //        {
+    //            while (!itr->second.empty())
+    //            {
+    //                _fileAbsOffsets[itr->second.front()] = readOff;
+
+    //                readOff += sizesPadded[itr->second.front()];
+    //                itr->second.pop();
+    //            }
+    //        }
+    //        readOff += _fileEntries[i].size;
+    //    }
+    //    else
+    //    {
+    //        flushQ[_fileEntries[i].blockBitSet].push(i);
+    //    }
+    //}
+    //{
+    //    for (auto itr = flushQ.begin(); itr != flushQ.end(); itr++)
+    //    {
+    //        while (!itr->second.empty())
+    //        {
+    //            _fileAbsOffsets[itr->second.front()] = readOff;
+
+    //            readOff += sizesPadded[itr->second.front()];
+    //            itr->second.pop();
+    //        }
+    //    }
+    //}
+
+    for (uint32_t i = 0; i < _fileAbsOffsets.size(); i++)
+    {
+        if (_fileEntries[i].nameStr() == "DCClientGUID")
+        {
+            stream->seekg(_fileAbsOffsets[i]);
+            for (int j = 0; j < _fileEntries[i].size - 2; j++)
+            {
+                char t;
+                stream->read((char*)&t, 1);
+
+                if (t > 44 && t < 91)
+                {
+
+                }
+                else
+                {
+                    break;
+                }
+            }
+        } 
+    }
+    return true;
 }
 bool WADArchive::GetFile(const uint32_t& entryIdx,shared_ptr <uint8_t[]> output) const
 {

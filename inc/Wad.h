@@ -63,7 +63,11 @@ public:
 
 		uint32_t offset = 0;
 
-		uint8_t unk4[0x14] = { 0 };
+		uint8_t unk4[12] = { 0 };
+
+		uint32_t offset2 = { 0 };
+
+		uint8_t unk5[4] = { 0 };
 
 		inline string nameStr() const
 		{
@@ -79,6 +83,7 @@ public:
 	bool GetFile(const uint32_t& entryIdx, shared_ptr<uint8_t[]> output) const;
 	bool GetFile(const uint32_t& entryIdx, std::iostream& outstream) const;
 	bool UnpackFiles(const string& outDir);
+	bool Test();
 	WADArchive();
 	WADArchive(shared_ptr<std::iostream> instream);
 

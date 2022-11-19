@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "Wad.h"
 #include <filesystem>
-#include <iomanip>
 #include <queue>
 #include <map>
 #include <cassert>
@@ -56,22 +55,34 @@ bool WADArchive::Read(std::shared_ptr<std::iostream> instream)
 
     _fileAbsOffsets = vector<size_t>(_header.fileCount);
 
-    vector<uint32_t> sizesPadded(_header.fileCount);
-    std::map<uint8_t, uint32_t> totalSize;
-    
-    totalSize[0] = _header.block0Size;
-    totalSize[1] = _header.block1Size;
-    totalSize[2] = _header.block2Size;
-    totalSize[8] = _header.block8Size;
+    //vector<uint32_t> sizesPadded(_header.fileCount);
+    //std::map<uint8_t, uint32_t> totalSize;
+    //
+    //totalSize[0] = _header.block0Size;
+    //totalSize[1] = _header.block1Size;
+    //totalSize[2] = _header.block2Size;
+    //totalSize[8] = _header.block8Size;
 
-    for (long long i = _header.fileCount - 1; i >= 0; i--)
-    {
-        if (_fileEntries[i].nameStr() != "autopad")
-        {
-            sizesPadded[i] = totalSize[_fileEntries[i].blockBitSet] - _fileEntries[i].offset;
-            totalSize[_fileEntries[i].blockBitSet] -= sizesPadded[i];
-        }
-    }
+    //for (long long i = _header.fileCount - 1; i >= 0; i--)
+    //{
+    //    if (_fileEntries[i].nameStr() != "autopad")
+    //    {
+    //        sizesPadded[i] = totalSize[_fileEntries[i].blockBitSet] - _fileEntries[i].offset;
+    //        totalSize[_fileEntries[i].blockBitSet] -= sizesPadded[i];
+    //    }
+    //}
+
+    //for (uint32_t i = 0; i < _header.fileCount; i++)
+    //{
+    //    if (_fileEntries[i].unk2[20] == 0 || _fileEntries[i].unk2[20] == 16)
+    //    {
+
+    //    }
+    //    else
+    //    {
+    //        cout << "";
+    //    }
+    //}
 
     std::queue<uint32_t> q;
 
@@ -87,100 +98,82 @@ bool WADArchive::Read(std::shared_ptr<std::iostream> instream)
         {
             for (auto itr = flushQ.begin(); itr != flushQ.end(); itr++)
             {
-                auto itr1 = itr;
-                itr1++;
                 readOff -= bitsetOffs[itr->first];
+                uint32_t temp = bitsetOffs[itr->first];
                 if (!itr->second.empty())
                 {
-                        bitsetOffs[itr->first] = _fileEntries[itr->second.back()].offset + _fileEntries[itr->second.back()].size;
-                    if(itr1 == flushQ.end())
-                        bitsetOffs[itr->first] += _fileEntries[itr->second.back()].unk2[24];
+                    while (!itr->second.empty())
+                    {
+                        if (itr->first == 8 && _fileEntries[itr->second.front()].blockBitSet != 8)
+                        {
+                            //_fileAbsOffsets[itr->second.front()] = readOff + _fileEntries[itr->second.front()].offset2;
+                            temp = _fileEntries[itr->second.front()].offset2 + 16;
+                            bitsetOffs[itr->first] = _fileEntries[itr->second.front()].offset2 + 16;
+                        }
+                        else
+                        {
+                            _fileAbsOffsets[itr->second.front()] = readOff + _fileEntries[itr->second.front()].offset;
+                            bitsetOffs[itr->first] = _fileEntries[itr->second.front()].offset + _fileEntries[itr->second.front()].size;
+                            temp = _fileEntries[itr->second.front()].offset + _fileEntries[itr->second.front()].size;
+                        }
+                        itr->second.pop();
+                    }
+                    
                 }
-                while (!itr->second.empty())
-                {
-                    _fileAbsOffsets[itr->second.front()] = readOff + _fileEntries[itr->second.front()].offset;
-
-                    itr->second.pop();
-                }
-                readOff += bitsetOffs[itr->first];
+                readOff += temp;
             }
-            flushQ.clear();
             readOff += _fileEntries[i].size;
         }
         else
         {
             flushQ[_fileEntries[i].blockBitSet].push(i);
+            if(_fileEntries[i].unk2[20] != 0)
+                flushQ[8].push(i);
         }
     }
     {
         for (auto itr = flushQ.begin(); itr != flushQ.end(); itr++)
         {
-            readOff -= bitsetOffs[itr->first];
             if (!itr->second.empty())
             {
-                bitsetOffs[itr->first] = _fileEntries[itr->second.back()].offset + _fileEntries[itr->second.back()].size;
-            }
-            while (!itr->second.empty())
-            {
-                _fileAbsOffsets[itr->second.front()] = readOff + _fileEntries[itr->second.front()].offset;
+                readOff -= bitsetOffs[itr->first];
+                uint32_t temp = 0;
 
-                itr->second.pop();
+                while (!itr->second.empty())
+                {
+                    if (itr->first == 8 && _fileEntries[itr->second.front()].blockBitSet != 8)
+                    {
+                        //_fileAbsOffsets[itr->second.front()] = readOff + _fileEntries[itr->second.front()].offset2;
+                        temp = _fileEntries[itr->second.front()].offset2 + 16;
+                        bitsetOffs[itr->first] = _fileEntries[itr->second.front()].offset2 + 16;
+                    }
+                    else
+                    {
+                        _fileAbsOffsets[itr->second.front()] = readOff + _fileEntries[itr->second.front()].offset;
+                        bitsetOffs[itr->first] = _fileEntries[itr->second.front()].offset + _fileEntries[itr->second.front()].size;
+                        temp = _fileEntries[itr->second.front()].offset + _fileEntries[itr->second.front()].size;
+                    }
+                    itr->second.pop();
+                }
+
+                readOff += temp;
             }
-            readOff += bitsetOffs[itr->first];
         }
     }
-
-    //for (uint32_t i = 0; i < _header.fileCount; i++)
-    //{
-    //    if (_fileEntries[i].nameStr() == "autopad")
-    //    {
-    //        for (auto itr = flushQ.begin(); itr != flushQ.end(); itr++)
-    //        {
-    //            while (!itr->second.empty())
-    //            {
-    //                _fileAbsOffsets[itr->second.front()] = readOff;
-
-    //                readOff += sizesPadded[itr->second.front()];
-    //                itr->second.pop();
-    //            }
-    //        }
-    //        readOff += _fileEntries[i].size;
-    //    }
-    //    else
-    //    {
-    //        flushQ[_fileEntries[i].blockBitSet].push(i);
-    //    }
-    //}
-    //{
-    //    for (auto itr = flushQ.begin(); itr != flushQ.end(); itr++)
-    //    {
-    //        while (!itr->second.empty())
-    //        {
-    //            _fileAbsOffsets[itr->second.front()] = readOff;
-
-    //            readOff += sizesPadded[itr->second.front()];
-    //            itr->second.pop();
-    //        }
-    //    }
-    //}
 
     for (uint32_t i = 0; i < _fileAbsOffsets.size(); i++)
     {
         if (_fileEntries[i].nameStr() == "DCClientGUID")
         {
             stream->seekg(_fileAbsOffsets[i]);
-            for (int j = 0; j < _fileEntries[i].size - 2; j++)
+            for (int j = 0; j < _fileEntries[i].size - 1; j++)
             {
                 char t;
                 stream->read((char*)&t, 1);
 
-                if (t > 44 && t < 91)
+                if (t != '.' && t != '-' && !(t >= '0' && t <= '9') && !(t >= 'A' && t <= 'Z') && !(t >= 'a' && t <= 'z'))
                 {
-
-                }
-                else
-                {
-                    break;
+                   return false;
                 }
             }
         } 
@@ -193,11 +186,11 @@ bool WADArchive::GetFile(const uint32_t& entryIdx,shared_ptr <uint8_t[]> output)
 	if (entryIdx >= _fileEntries.size())
 		return false;
 
-    if (_fileEntries[entryIdx].size + _fileEntries[entryIdx].offset + _baseOffset > _streamSize)
+    if (_fileEntries[entryIdx].size + _fileAbsOffsets[entryIdx] > _streamSize)
         return false;
 	output = make_shared<uint8_t[]>(_fileEntries[entryIdx].size);
 
-	stream->seekg(_fileEntries[entryIdx].offset, std::ios::beg);
+	stream->seekg(_fileAbsOffsets[entryIdx], std::ios::beg);
     stream->read((char*)output.get(), _fileEntries[entryIdx].size);
 	
 	return true;
@@ -209,12 +202,12 @@ bool WADArchive::GetFile(const uint32_t& entryIdx, std::iostream& outstream) con
     if (entryIdx >= _fileEntries.size())
         return false;
 
-    if (_fileEntries[entryIdx].size + _fileEntries[entryIdx].offset + _baseOffset > _streamSize)
+    if (_fileEntries[entryIdx].size + _fileAbsOffsets[entryIdx] > _streamSize)
         return false;
 
 	std::unique_ptr<uint8_t[]> output = std::make_unique<uint8_t[]>(_fileEntries[entryIdx].size);
 
-    stream->seekg(_fileEntries[entryIdx].offset + _baseOffset, std::ios::beg);
+    stream->seekg(_fileAbsOffsets[entryIdx], std::ios::beg);
 
     stream->read((char*)output.get(), _fileEntries[entryIdx].size);
 

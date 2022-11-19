@@ -752,33 +752,51 @@ int main(int argc, char* argv[])
 {
     //ImportModels(std::filesystem::path(R"(C:\Users\abhin\OneDrive\Desktop\New folder (6))"), std::filesystem::path(R"(C:\Users\abhin\OneDrive\Desktop\r_baldur00.wad)"));
 
-    CommandLine cmmdParse("God of War Tool","Usage:\n  GOWTool");
-    cmmdParse.AddCommand("wad", "Target a Wad file for export.");
-    cmmdParse.AddOption("wad", "-p", "Input path to .wad file.", CommandLine::OptionType::MultiArgs);
-    cmmdParse.AddOption("wad", "-u", "Unpack WAD files to folder.");
+    directory_iterator dir(R"(D:\gowr\Image0\exec\wad\orbis_le)");
 
-    if (cmmdParse.Parse(argc, argv))
+    int cnt = 0;
+    for (auto& itr : dir)
     {
-        if (cmmdParse._commands["wad"].active)
+        if (itr.path().extension().string() == ".wad")
         {
-            auto& cmmd = cmmdParse._commands["wad"];
-            if (cmmd._options["-p"].active)
+            WADArchive wad;
+            shared_ptr<fstream> fsptr = make_shared<fstream>(itr.path(), std::ios::binary | std::ios::in);
+            if (!wad.Read(fsptr))
             {
-                auto& opn = cmmd._options["-p"];
-                for (auto itr = opn.args.begin(); itr != opn.args.end(); itr++)
-                {
-                    path outDir = path(*itr).parent_path() / path(*itr).stem();
-                    WADArchive wad;
-                    shared_ptr<fstream> fsptr = make_shared<fstream>(*itr, std::ios::binary | std::ios::in);
-                    wad.Read(fsptr);
-                    std::filesystem::create_directory(outDir);
-                    wad.UnpackFiles(outDir.string());
-                }
+                cnt++;
+                cout << itr.path().string();
+                cout << "\n";
             }
         }
     }
-    else
-        cmmdParse.PrintHelp();
+    cout << cnt;
+    //CommandLine cmmdParse("God of War Tool","Usage:\n  GOWTool");
+    //cmmdParse.AddCommand("wad", "Target a Wad file for export.");
+    //cmmdParse.AddOption("wad", "-p", "Input path to .wad file.", CommandLine::OptionType::MultiArgs);
+    //cmmdParse.AddOption("wad", "-u", "Unpack WAD files to folder.");
+
+    //if (cmmdParse.Parse(argc, argv))
+    //{
+    //    if (cmmdParse._commands["wad"].active)
+    //    {
+    //        auto& cmmd = cmmdParse._commands["wad"];
+    //        if (cmmd._options["-p"].active)
+    //        {
+    //            auto& opn = cmmd._options["-p"];
+    //            for (auto itr = opn.args.begin(); itr != opn.args.end(); itr++)
+    //            {
+    //                path outDir = path(*itr).parent_path() / path(*itr).stem();
+    //                WADArchive wad;
+    //                shared_ptr<fstream> fsptr = make_shared<fstream>(*itr, std::ios::binary | std::ios::in);
+    //                wad.Read(fsptr);
+    //                std::filesystem::create_directory(outDir);
+    //                wad.UnpackFiles(outDir.string());
+    //            }
+    //        }
+    //    }
+    //}
+    //else
+    //    cmmdParse.PrintHelp();
     //if (argc < 2)
     //{
     //    Utils::Logger::Error("Required argument was not provided.\n");

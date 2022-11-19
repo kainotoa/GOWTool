@@ -16,6 +16,32 @@ WADArchive::WADArchive(shared_ptr<iostream> instream)
     Read(instream);
 }
 
+bool WADArchive::Test()
+{
+    for (uint32_t i = 0; i < _fileEntries.size(); i++)
+    {
+        if (_fileEntries[i].size + _fileAbsOffsets[i] > _streamSize)
+            return false;
+    }
+    for (uint32_t i = 0; i < _fileAbsOffsets.size(); i++)
+    {
+        if (_fileEntries[i].nameStr() == "DCClientGUID")
+        {
+            stream->seekg(_fileAbsOffsets[i]);
+            for (int j = 0; j < _fileEntries[i].size - 1; j++)
+            {
+                char t;
+                stream->read((char*)&t, 1);
+
+                if (t != '.' && t != '-' && !(t >= '0' && t <= '9') && !(t >= 'A' && t <= 'Z') && !(t >= 'a' && t <= 'z'))
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
 bool WADArchive::Read(std::shared_ptr<std::iostream> instream)
 {
     if (instream == nullptr || instream->fail())
@@ -159,24 +185,6 @@ bool WADArchive::Read(std::shared_ptr<std::iostream> instream)
                 readOff += temp;
             }
         }
-    }
-
-    for (uint32_t i = 0; i < _fileAbsOffsets.size(); i++)
-    {
-        if (_fileEntries[i].nameStr() == "DCClientGUID")
-        {
-            stream->seekg(_fileAbsOffsets[i]);
-            for (int j = 0; j < _fileEntries[i].size - 1; j++)
-            {
-                char t;
-                stream->read((char*)&t, 1);
-
-                if (t != '.' && t != '-' && !(t >= '0' && t <= '9') && !(t >= 'A' && t <= 'Z') && !(t >= 'a' && t <= 'z'))
-                {
-                   return false;
-                }
-            }
-        } 
     }
     return true;
 }

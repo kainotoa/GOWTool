@@ -4,6 +4,7 @@
 #include <queue>
 #include <map>
 #include <cassert>
+#include <iomanip>
 
 WADArchive::WADArchive()
 {
@@ -16,6 +17,38 @@ WADArchive::WADArchive(shared_ptr<iostream> instream)
     Read(instream);
 }
 
+void WADArchive::Dump(const string& outpath)
+{
+    fstream fs(outpath, ios::out);
+    for (uint32_t i = 0; i < _header.fileCount; i++)
+    {
+        fs.width(56); fs << std::left << _fileEntries[i].nameStr();
+        fs.width(9); fs << std::left << _fileEntries[i].offset;
+        fs.width(9); fs << std::left << _fileEntries[i].size;
+        fs.width(9); fs << std::left << _fileEntries[i].offset2;
+
+        for (int j = 0; j < 0x1F; j++)
+        {
+            fs.width(4); fs << std::left << (int)_fileEntries[i].unk2[j];
+        }
+        fs.width(4); fs << std::left << (int)_fileEntries[i].blockBitSet;
+
+        for (int j = 0; j < 0x8; j++)
+        {
+            fs.width(4); fs << std::left << (int)_fileEntries[i].unk3[j];
+        }
+        for (int j = 0; j < 12; j++)
+        {
+            fs.width(4); fs << std::left << (int)_fileEntries[i].unk4[j];
+        }
+        for (int j = 0; j < 4; j++)
+        {
+            fs.width(4); fs << std::left << (int)_fileEntries[i].unk5[j];
+        }
+        fs << "\n";
+    }
+    fs.close();
+}
 bool WADArchive::Test()
 {
     for (uint32_t i = 0; i < _fileEntries.size(); i++)
@@ -120,8 +153,13 @@ bool WADArchive::Read(std::shared_ptr<std::iostream> instream)
  
     for (uint32_t i = 0; i < _header.fileCount; i++)
     {
-        if (_fileEntries[i].nameStr() == "autopad")
+        if (_fileEntries[i].unk3[0x2] == 1)
         {
+            if(_fileEntries[i].nameStr() != "autopad")
+                flushQ[_fileEntries[i].blockBitSet].push(i);
+            if (_fileEntries[i].unk2[20] != 0)
+                flushQ[8].push(i);
+
             for (auto itr = flushQ.begin(); itr != flushQ.end(); itr++)
             {
                 readOff -= bitsetOffs[itr->first];
@@ -148,7 +186,11 @@ bool WADArchive::Read(std::shared_ptr<std::iostream> instream)
                 }
                 readOff += temp;
             }
-            readOff += _fileEntries[i].size;
+            if (_fileEntries[i].nameStr() == "autopad")
+            {
+                _fileAbsOffsets[i] = readOff;
+                readOff += _fileEntries[i].size;
+            }
         }
         else
         {
@@ -230,14 +272,16 @@ bool WADArchive::UnpackFiles(const string& outDir)
 
     for (uint32_t i = 0; i < _fileEntries.size(); i++)
     {
-        path pth = path(outDir) / (_fileEntries[i].nameStr() + "_" + std::to_string(i) + ".bin");
+        path pth = path(outDir) / (_fileEntries[i].nameStr() + "---" + std::to_string(i) + ".bin");
 
         fstream ofs(pth, std::ios::binary | std::ios::out);
 
-        GetFile(i, ofs);
+        if(!GetFile(i, ofs))
+            return false;
 
         ofs.close();
     }
+    return true;
 }
 void WADArchive::WriteBufferToWad(const byte* buffer, const size_t& bufferSize, const size_t& bufferIdx)
 {

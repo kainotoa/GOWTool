@@ -84,6 +84,7 @@ public:
 	bool GetFile(const uint32_t& entryIdx, std::iostream& outstream) const;
 	bool UnpackFiles(const string& outDir);
 	bool Test();
+	void Dump(const string& outpath);
 	WADArchive();
 	WADArchive(shared_ptr<std::iostream> instream);
 

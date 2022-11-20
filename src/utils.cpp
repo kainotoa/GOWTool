@@ -116,13 +116,17 @@ namespace Utils
 					{
 						auto& opn = cmmd._options[argv[i]];
 						string opnName = argv[i];
-						i++;
 						opn.active = true;
-						if(opn.optionType == OptionType::MultiArgs || opn.optionType == OptionType::SingleArg)
-							for (; i < argc && !cmmd._options.contains(argv[i]) && itr->first != argv[i]; i++)
+						if (opn.optionType == OptionType::MultiArgs || opn.optionType == OptionType::SingleArg)
+						{
+							i++;
+							for (; i < argc && itr->first != argv[i]; i++)
 							{
-								opn.args.push_back(argv[i]);
-
+								if (cmmd._options.contains(argv[i]))
+								{
+									i--;
+									break;
+								}
 								if (opn.valids.size() > 0)
 								{
 									if (std::find(opn.valids.begin(), opn.valids.end(), argv[i]) == opn.valids.end())
@@ -132,19 +136,21 @@ namespace Utils
 										return false;
 									}
 								}
-								if (opn.args.size() > 1 && opn.optionType == OptionType::SingleArg)
-								{
-									string msg = "Multiple Args not allowed for the provided option: " + opnName + ".\n";
-									Utils::Logger::Error(msg.c_str());
-									return false;
-								}
-								if (opn.args.size() < 1)
-								{
-									string msg = "No Args provided for the option: " + opnName + ".\n";
-									Utils::Logger::Error(msg.c_str());
-									return false;
-								}
+								opn.args.push_back(argv[i]);
 							}
+							if (opn.args.size() > 1 && opn.optionType == OptionType::SingleArg)
+							{
+								string msg = "Multiple Args not allowed for the provided option: " + opnName + ".\n";
+								Utils::Logger::Error(msg.c_str());
+								return false;
+							}
+							if (opn.args.size() < 1)
+							{
+								string msg = "No Args provided for the option: " + opnName + ".\n";
+								Utils::Logger::Error(msg.c_str());
+								return false;
+							}
+						}
 					}
 					else
 					{

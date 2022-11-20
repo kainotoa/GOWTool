@@ -576,22 +576,22 @@ using Utils::CommandLine;
 //    }
 //    return true;
 //}
-bool ExtractAllFiles(const WADArchive& wad, const path& outdir)
-{
-    if (wad._fileEntries.size() < 1)
-        return false;
-    if (!std::filesystem::exists(outdir))
-        return false;
-    for (int i = 0; i < wad._fileEntries.size(); i++)
-    {
-        std::filesystem::path outfile = outdir / (wad._fileEntries[i].nameStr() + "." + std::to_string(i) + ".bin");
-        std::fstream fs;
-        fs.open(outfile.string(), ios::binary | ios::out);
-        wad.GetFile(i, fs);
-        fs.close();
-    }
-    return true;
-}
+//bool ExtractAllFiles(const WADArchive& wad, const path& outdir)
+//{
+//    if (wad._fileEntries.size() < 1)
+//        return false;
+//    if (!std::filesystem::exists(outdir))
+//        return false;
+//    for (int i = 0; i < wad._fileEntries.size(); i++)
+//    {
+//        std::filesystem::path outfile = outdir / (wad._fileEntries[i].nameStr() + "." + std::to_string(i) + ".bin");
+//        std::fstream fs;
+//        fs.open(outfile.string(), ios::binary | ios::out);
+//        wad.GetFile(i, fs);
+//        fs.close();
+//    }
+//    return true;
+//}
 //bool ExportAllSkinnedMesh(WadFile& wad, vector<Lodpack*>& lodpacks,const std::filesystem::path& outdir, bool Lods = false)
 //{
 //    if (wad._FileEntries.size() < 1 || lodpacks.size() < 1)
@@ -752,51 +752,79 @@ int main(int argc, char* argv[])
 {
     //ImportModels(std::filesystem::path(R"(C:\Users\abhin\OneDrive\Desktop\New folder (6))"), std::filesystem::path(R"(C:\Users\abhin\OneDrive\Desktop\r_baldur00.wad)"));
 
-    directory_iterator dir(R"(D:\gowr\Image0\exec\wad\orbis_le)");
+    //directory_iterator dir(R"(D:\gowr\Image0\exec\wad\orbis_le)");
 
-    int cnt = 0;
-    for (auto& itr : dir)
-    {
-        if (itr.path().extension().string() == ".wad")
-        {
-            WADArchive wad;
-            shared_ptr<fstream> fsptr = make_shared<fstream>(itr.path(), std::ios::binary | std::ios::in);
-            if (!wad.Read(fsptr))
-            {
-                cnt++;
-                cout << itr.path().string();
-                cout << "\n";
-            }
-        }
-    }
-    cout << cnt;
-    //CommandLine cmmdParse("God of War Tool","Usage:\n  GOWTool");
-    //cmmdParse.AddCommand("wad", "Target a Wad file for export.");
-    //cmmdParse.AddOption("wad", "-p", "Input path to .wad file.", CommandLine::OptionType::MultiArgs);
-    //cmmdParse.AddOption("wad", "-u", "Unpack WAD files to folder.");
-
-    //if (cmmdParse.Parse(argc, argv))
+    //int cnt = 0;
+    //for (auto& itr : dir)
     //{
-    //    if (cmmdParse._commands["wad"].active)
+    //    if (itr.path().extension().string() == ".wad")
     //    {
-    //        auto& cmmd = cmmdParse._commands["wad"];
-    //        if (cmmd._options["-p"].active)
+    //        WADArchive wad;
+    //        shared_ptr<fstream> fsptr = make_shared<fstream>(itr.path(), std::ios::binary | std::ios::in);
+    //        wad.Read(fsptr);
+    //        if (!wad.Test())
     //        {
-    //            auto& opn = cmmd._options["-p"];
-    //            for (auto itr = opn.args.begin(); itr != opn.args.end(); itr++)
-    //            {
-    //                path outDir = path(*itr).parent_path() / path(*itr).stem();
-    //                WADArchive wad;
-    //                shared_ptr<fstream> fsptr = make_shared<fstream>(*itr, std::ios::binary | std::ios::in);
-    //                wad.Read(fsptr);
-    //                std::filesystem::create_directory(outDir);
-    //                wad.UnpackFiles(outDir.string());
-    //            }
+    //            cnt++;
+    //            cout << itr.path().string();
+    //            cout << "\n";
     //        }
     //    }
     //}
-    //else
-    //    cmmdParse.PrintHelp();
+    //cout << cnt;
+    CommandLine cmmdParse("God of War Tool","Usage:\n  GOWTool");
+    cmmdParse.AddCommand("wad", "Target a Wad file for export.");
+    cmmdParse.AddOption("wad", "-p", "Input path to .wad file.", CommandLine::OptionType::MultiArgs);
+    cmmdParse.AddOption("wad", "-u", "Unpack WAD files to folder.");
+
+    if (cmmdParse.Parse(argc, argv))
+    {
+        if (cmmdParse._commands["wad"].active)
+        {
+            auto& cmmd = cmmdParse._commands["wad"];
+            if (cmmd._options["-u"].active)
+            {
+                auto& opn = cmmd._options["-p"];
+                for (auto itr = opn.args.begin(); itr != opn.args.end(); itr++)
+                {
+                    path wadPath = path(*itr);
+                    if (wadPath.empty() || !wadPath.is_absolute() || !std::filesystem::exists(wadPath) || !std::filesystem::is_regular_file(wadPath) || wadPath.extension().string() != ".wad")
+                    {
+                        string msg = "Invalid/Unspecified .wad file path: " + wadPath.string() + "\n";
+                        Utils::Logger::Error(msg.c_str());
+                        cmmdParse.PrintHelp();
+                        return -1;
+                    }
+                    path outDir = wadPath.parent_path() / wadPath.stem();
+                    WADArchive wad;
+                    shared_ptr<fstream> fsptr = make_shared<fstream>(wadPath, std::ios::binary | std::ios::in);
+                    wad.Read(fsptr);
+
+                    if (!wad.Test())
+                    {
+                        string msg = "Assertion Failed, Corrupted File/Bad Parsing Logic, file: " + wadPath.string() + "\n";
+                        Utils::Logger::Error(msg.c_str());
+                        continue;
+                    }
+                    std::filesystem::create_directory(outDir);
+                    
+                    if (wad.UnpackFiles(outDir.string()))
+                    {
+                        string msg = "Successfully unpacked all files to: " + outDir.string() + "\n";
+                        Utils::Logger::Success(msg.c_str());
+                        return 0;
+                    }
+                }
+            }
+            else
+            {
+                Utils::Logger::Error("Unpack task not specified\n");
+                cmmdParse.PrintHelp();
+                return -1;
+            }
+        }
+    }
+    else
+        cmmdParse.PrintHelp();
     //if (argc < 2)
     //{
     //    Utils::Logger::Error("Required argument was not provided.\n");

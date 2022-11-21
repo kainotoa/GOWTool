@@ -34,7 +34,12 @@ namespace Utils
 		);
 		return s;
 	}
-
+	std::string inline str_toupper(std::string s) {
+		std::transform(s.begin(), s.end(), s.begin(),
+			[](unsigned char c) { return std::toupper(c); }
+		);
+		return s;
+	}
 	class CommandLine
 	{
 	public:
@@ -48,7 +53,7 @@ namespace Utils
 		CommandLine(const string& title, const string& usage);
 		void AddCommand(const string& commandName, const string& Desc);
 		void AddOption(const string& commandName, const string& optionName,const string& desc, const OptionType& optionType = OptionType::Bool, const vector<string>& valids = { });
-		void PrintHelp();
+		void PrintHelp(bool forceGlobal = false);
 		bool Parse(int argc, char* argv[]);
 
 		class Command

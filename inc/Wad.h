@@ -38,12 +38,15 @@ public:
 	{
 		enum class FileType : uint16_t
 		{
-			None = 0x0,
+			GOWR_MESH_MAP = 0x0,
+			GOWR_MESH_DEFN = 0x1,
 			RigidMeshDefData = 0xB,
 			Rig = 0x3D,
 			SkinnedMeshDef = 0x98,
 			Texture = 0x80A1,
+			GOWR_TEXTURE,
 			SkinnedMeshBuff = 0x8198,
+			GOWR_Skinned_Mesh_Buff
 		};
 		uint16_t group = 0;
 		FileType type;

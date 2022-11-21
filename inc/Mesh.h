@@ -17,7 +17,7 @@ struct RawMeshContainer
 	std::string name;
 	RawMeshContainer() = default;
 };
-enum class PrimitiveTypes
+enum class PrimitiveTypes : uint8_t
 {
 	POSITION,
 	NORMALS,
@@ -37,7 +37,7 @@ enum class PrimitiveTypes
 	UNKNOWN7
 };
 
-enum class DataTypes
+enum class DataTypes : uint8_t
 {
 	FLOAT,
 	HALFWORD_STRUCT_0,
@@ -48,7 +48,8 @@ enum class DataTypes
 	HALFWORD_STRUCT_2,  //USHORT half normalized or compliment bs maybe
 	BYTE_STRUCT_0		//UBYTE_UNORM
 };
-struct Component
+
+struct alignas (8) Component
 {
 	PrimitiveTypes primitiveType;
 	DataTypes dataType;
@@ -59,17 +60,24 @@ struct Component
 struct MeshInfo
 {
 	uint64_t Hash{ 0 };
+	
 	uint32_t vertCount{ 0 };
 	uint32_t indCount{ 0 };
-	uint64_t vertexOffset{ UINT64_MAX };
-	uint64_t indicesOffset{ UINT64_MAX };
+	uint32_t faceCount{ 0 };
+
+	uint64_t vertexOffset { 0 };
+	uint64_t indicesOffset { 0 };
+
 	vector<Component> Components;
 	vector<uint64_t> bufferOffset;
 	vector<uint16_t> bufferStride;
 
 	Vec3 meshScale{ };
 	Vec3 meshMin{ };
+	
 	uint16_t LODlvl{ 0 };
+	
 	uint16_t boneAssociated{ 0 };
+	
 	string name;
 };

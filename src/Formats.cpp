@@ -6,6 +6,151 @@ MGDefinition::~MGDefinition()
 	delete[] defOffsets;
 }
 
+namespace GOWR
+{
+	bool MESH::Parse(std::iostream& stream, vector<MeshInfo>& meshes, size_t meshBufferSize, size_t baseOff)
+	{
+		// Checks
+		if (meshBufferSize < 0x20)
+			return false;
+		stream.seekg(0, std::ios::end);
+		if (stream.tellg() < meshBufferSize)
+			return false;
+
+		uint32_t defOffsetsBeg{ 0x34 };
+		stream.seekg(baseOff + 0xC);
+		stream.read((char*)&defOffsetsBeg,sizeof defOffsetsBeg);
+
+		uint32_t defCount{ 0 };
+		stream.read((char*)&defCount, sizeof defCount);
+
+		uint32_t fileSize{ 0 };
+		stream.seekg(0x8, ios::cur);
+		stream.read((char*)&fileSize, sizeof fileSize);
+
+		uint32_t defOff = 0;
+		
+		if (meshBufferSize < (defCount * sizeof defOff + defOffsetsBeg + 0xC))
+			return false;
+
+		baseOff += defOffsetsBeg + 0xC;
+		for (uint32_t i = 0; i < defCount; i++)
+		{
+			MeshInfo info;
+			
+			stream.seekg(baseOff + i * sizeof defOff);
+
+			stream.read((char*)&defOff, sizeof defOff);
+
+			stream.seekg(baseOff + i * sizeof defOff + defOff);
+
+			stream.seekg(0x10, ios::cur);
+
+			Vec3 extent;
+			stream.read((char*)&extent, sizeof extent);
+
+			Vec3 origin;
+			stream.read((char*)&origin, sizeof origin);
+
+			info.meshScale = Vec3(extent.X * 2, extent.Y * 2, extent.Z * 2);
+			info.meshMin =  Vec3(origin.X - extent.X, origin.Y - extent.Y, origin.Z - extent.Z);
+
+			stream.seekg(0x8, ios::cur);
+			stream.read((char*)&info.indicesOffset, sizeof uint32_t);
+			
+			stream.seekg(0x8, ios::cur);
+			stream.read((char*)&info.vertexOffset, sizeof uint32_t);
+
+			stream.seekg(0x4, ios::cur);
+			stream.read((char*)&info.vertCount, sizeof uint32_t);
+
+			stream.read((char*)&info.faceCount, sizeof uint32_t);
+
+			stream.seekg(0x10, ios::cur);
+			stream.read((char*)&info.indCount, sizeof uint32_t);
+
+			uint32_t compOffset = 0;
+			uint32_t bufferOffsetsOff = 0;
+			stream.read((char*)&compOffset, sizeof uint32_t);
+			stream.read((char*)&bufferOffsetsOff, sizeof uint32_t);
+
+			stream.read((char*)&info.Hash, sizeof uint64_t);
+
+			stream.seekg(0x10, ios::cur);
+
+			uint8_t buffCount = 0;
+			uint8_t compCount = 0;
+			stream.read((char*)&buffCount, sizeof buffCount);
+			stream.seekg(0x3, ios::cur);
+			stream.read((char*)&compCount, sizeof buffCount);
+
+			stream.seekg(baseOff + i * sizeof defOff + defOff + compOffset);
+			info.Components = vector<Component>(compCount);
+			for (uint8_t j = 0; j < compCount; j++)
+			{
+				Component& comp = info.Components[j];
+				stream.read((char*)&comp, sizeof comp);
+			}
+
+			info.bufferStride = vector<uint16_t>(buffCount);
+			for (uint8_t j = 0; j < buffCount; j++)
+			{
+				uint16_t& stride = info.bufferStride[j];
+				stride = 0;
+				for (uint8_t f = 0; f < compCount; f++)
+				{
+					if (j == info.Components[f].bufferIndex)
+					{
+						switch (info.Components[f].dataType)
+						{
+						case DataTypes::FLOAT:
+							stride += 4 * info.Components[f].elementCount;
+							break;
+						case DataTypes::WORD_STRUCT_0:
+							stride += 4 * info.Components[f].elementCount;
+							break;
+						case DataTypes::WORD_STRUCT_1:
+							stride += 4 * info.Components[f].elementCount;
+							break;
+						case DataTypes::HALFWORD_STRUCT_0:
+							stride += 2 * info.Components[f].elementCount;
+							break;
+						case DataTypes::HALFWORD_STRUCT_1:
+							stride += 2 * info.Components[f].elementCount;
+							break;
+						case DataTypes::HALFWORD_STRUCT_2:
+							stride += 2 * info.Components[f].elementCount;
+							break;
+						case DataTypes::UNSIGNED_SHORT:
+							stride += 2 * info.Components[f].elementCount;
+							break;
+						case DataTypes::BYTE_STRUCT_0:
+							stride += 1 * info.Components[f].elementCount;
+							break;
+						default:
+							throw std::exception("invalid struct");
+							break;
+						}
+					}
+				}
+			}
+
+
+			info.bufferOffset = vector<uint64_t>(buffCount);
+			stream.seekg(baseOff + i * sizeof defOff + defOff + bufferOffsetsOff);
+			for (uint8_t j = 0; j < buffCount; j++)
+			{
+				uint64_t& buffOff = info.bufferOffset[j];
+				buffOff = 0;
+				stream.read((char*)&buffOff, sizeof uint32_t);
+			}
+
+			meshes.push_back(info);
+		}
+
+		return true;
+	}
+}
 vector<MeshInfo> MGDefinition::ReadMG(std::stringstream& file)
 {
 	vector<MeshInfo> meshesinfo;

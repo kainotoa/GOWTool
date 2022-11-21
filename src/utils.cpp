@@ -164,20 +164,23 @@ namespace Utils
 		}
 		return false;
 	}
-	void CommandLine::PrintHelp()
+	void CommandLine::PrintHelp(bool forceGlobal)
 	{
-		for (auto itr = _commands.begin(); itr != _commands.end(); itr++)
+		if (!forceGlobal)
 		{
-			if (itr->second.active)
+			for (auto itr = _commands.begin(); itr != _commands.end(); itr++)
 			{
-				cout << itr->first +"\n";
-				cout << _usage + " " + itr->first + " [options]\n";
-				cout << "Options:\n";
-				for (auto itr1 = itr->second._options.begin(); itr1 != itr->second._options.end(); itr1++)
+				if (itr->second.active)
 				{
-					cout << "  " + itr1->first + "\t\t" + itr1->second.desc + "\n";
+					cout << itr->first +"\n";
+					cout << _usage + " " + itr->first + " [options]\n";
+					cout << "Options:\n";
+					for (auto itr1 = itr->second._options.begin(); itr1 != itr->second._options.end(); itr1++)
+					{
+						cout << "  " + itr1->first + "\t\t" + itr1->second.desc + "\n";
+					}
+					return;
 				}
-				return;
 			}
 		}
 		cout << _title + "\n";

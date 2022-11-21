@@ -4,7 +4,7 @@
 #include "../inc/Mesh.h"
 #include "../inc/Formats.h"
 
-RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::stringstream& file,std::string name, uint64_t off)
+RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::iostream& file,std::string name, uint64_t off)
 {
     RawMeshContainer Mesh;
     Mesh.name = name;

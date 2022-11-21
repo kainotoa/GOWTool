@@ -153,8 +153,8 @@ size_t ConvertGnfToDDS(const byte* gnfsrc, const size_t& gnfsize, byte*& ddsout)
 
 		size_t tempw = BitHacks::RoundUpTo2(w);
 		size_t temph = BitHacks::RoundUpTo2(h);
-		if (i == 0 && tempw != (gnfimg.header.pitch + 1))
-			throw std::exception("Pitch doesn't match RoundUp2 Width");
+		//if (i == 0 && tempw != (gnfimg.header.pitch + 1))
+		//	throw std::exception("Pitch doesn't match RoundUp2 Width");
 
 		tempw = pixbl == 1 ? std::max<size_t>(tempw, 16) : std::max<size_t>(tempw, 32);
 		temph = pixbl == 1 ? std::max<size_t>(temph, 16) : std::max<size_t>(temph, 32);

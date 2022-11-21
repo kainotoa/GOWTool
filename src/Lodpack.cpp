@@ -3,7 +3,7 @@
 
 void Lodpack::Read(std::string filename)
 {
-	file.open(filename, ios::in | ios::binary | ios::out);
+	file.open(filename, ios::in | ios::binary);
 	file.read((char*)&groupCount, sizeof uint32_t);
 	file.read((char*)&TotalmembersCount, sizeof uint32_t);
 

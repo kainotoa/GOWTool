@@ -11,6 +11,7 @@
 #include "converter.h"
 #include "glTFDeserializer.h"
 #include <map>
+#include "krak.h"
 
 using std::filesystem::path;
 using std::filesystem::directory_iterator;
@@ -549,128 +550,115 @@ using Utils::CommandLine;
 //    ofs.close();
 //    return true;
 //}
-//bool ExportAllTextures(WadFile& wad, vector<Texpack*>& texpacks, const std::filesystem::path& outdir,bool dds)
-//{
-//    if (wad._FileEntries.size() < 1 || texpacks.size() < 1)
-//        return false;
-//    if (!std::filesystem::exists(outdir))
-//        return false;
-//    for (int i = 0; i < wad._FileEntries.size(); i++)
-//    {
-//        if (wad._FileEntries[i].type == WadFile::FileType::Texture)
-//        {
-//            std::stringstream s;
-//            std::string name = wad._FileEntries[i].name.substr(3);
-//            s << std::hex << name.substr(name.find_last_of("_") + 1, 16);
-//            uint64_t hash = 0;
-//            s >> hash;
-//            for (int j = 0; j < texpacks.size(); j++)
-//            {
-//                if (texpacks[j]->ContainsTexture(hash))
-//                {
-//                    texpacks[j]->ExportGnf(outdir, hash, wad._FileEntries[i].name, dds);
-//                    break;
-//                }
-//            }
-//        }
-//    }
-//    return true;
-//}
-//bool ExtractAllFiles(const WADArchive& wad, const path& outdir)
-//{
-//    if (wad._fileEntries.size() < 1)
-//        return false;
-//    if (!std::filesystem::exists(outdir))
-//        return false;
-//    for (int i = 0; i < wad._fileEntries.size(); i++)
-//    {
-//        std::filesystem::path outfile = outdir / (wad._fileEntries[i].nameStr() + "." + std::to_string(i) + ".bin");
-//        std::fstream fs;
-//        fs.open(outfile.string(), ios::binary | ios::out);
-//        wad.GetFile(i, fs);
-//        fs.close();
-//    }
-//    return true;
-//}
-//bool ExportAllSkinnedMesh(WadFile& wad, vector<Lodpack*>& lodpacks,const std::filesystem::path& outdir, bool Lods = false)
-//{
-//    if (wad._FileEntries.size() < 1 || lodpacks.size() < 1)
-//        return false;
-//    if (!std::filesystem::exists(outdir))
-//        return false;
-//    vector<int> usedMeshBufferIndices;
-//    for (int i = 0; i < wad._FileEntries.size(); i++)
-//    {
-//        if (wad._FileEntries[i].type == WadFile::FileType::SkinnedMeshDef)
-//        {
-//            std::string name = wad._FileEntries[i].name.substr(3, wad._FileEntries[i].name.length() - 5);
-//            std::stringstream meshDefStream;
-//            std::stringstream meshBuffStream;
-//            std::stringstream rigStream;
-//            wad.GetBuffer(i, meshDefStream);
-//            for (int j = 0; j < wad._FileEntries.size(); j++)
-//            {
-//                if (wad._FileEntries[j].type == WadFile::FileType::SkinnedMeshBuff && (wad._FileEntries[j].name.find(wad._FileEntries[i].name) != std::string::npos))
-//                {
-//                    if (std::find(usedMeshBufferIndices.begin(), usedMeshBufferIndices.end(), j) != usedMeshBufferIndices.end())
-//                        continue;
-//                    wad.GetBuffer(j, meshBuffStream);
-//                    usedMeshBufferIndices.push_back(j);
-//                    break;
-//                }
-//            }
-//            for (int j = 0; j < wad._FileEntries.size(); j++)
-//            {
-//                if (wad._FileEntries[j].type == WadFile::FileType::Rig && (wad._FileEntries[j].name.find("Proto") != std::string::npos))
-//                {
-//                    std::string sample = Utils::str_tolower(wad._FileEntries[j].name.substr(7, wad._FileEntries[j].name.length() - 7));
-//                    if (sample == name)
-//                    {
-//                        wad.GetBuffer(j, rigStream);
-//                        break;
-//                    }
-//                }
-//            }
-//
-//            MGDefinition meshDef;
-//            auto meshInfos = meshDef.ReadMG(meshDefStream);
-//            Rig rig(rigStream);
-//
-//            vector<RawMeshContainer> meshes;
-//            for (int j = 0; j < meshInfos.size(); j++)
-//            {
-//                char buf[10];
-//                sprintf_s(buf, "%04d", j);
-//                string subname = "submesh_" + string(buf) + "_" + std::to_string(meshInfos[j].LODlvl);
-//                if (meshInfos[j].LODlvl > 0 && !Lods)
-//                    continue;
-//                if (meshInfos[j].Hash == 0)
-//                {
-//                    if (meshBuffStream.tellp() != std::streampos(0))
-//                    {
-//                        meshes.push_back(containRawMesh(meshInfos[j], meshBuffStream, subname));
-//                    }
-//                }
-//                else
-//                {
-//                    std::stringstream buffer;
-//                    for (int k = 0; k < lodpacks.size(); k++)
-//                    {
-//                        if (lodpacks[k]->GetBuffer(meshInfos[j].Hash, buffer))
-//                            break;
-//                    }
-//                    if (buffer.tellp() != std::streampos(0))
-//                    {
-//                        meshes.push_back(containRawMesh(meshInfos[j], buffer, subname));
-//                    }
-//                }
-//            }
-//            std::filesystem::path outfile = outdir / (wad._FileEntries[i].name + "." + std::to_string(i) + ".glb");
-//            WriteGLTF(outfile, meshes, rig);
-//        }
-//    }
-//    return true;
-//}
+bool ExportAllTextures(WADArchive& wad, vector<Texpack*>& texpacks, const std::filesystem::path& outdir,bool dds)
+{
+    if (wad._fileEntries.size() < 1 || texpacks.size() < 1)
+        return false;
+    if (!std::filesystem::exists(outdir))
+        return false;
+    for (int i = 0; i < wad._fileEntries.size(); i++)
+    {
+        if (wad._fileEntries[i].type == WADArchive::FileDesc::FileType::GOWR_TEXTURE)
+        {
+            std::stringstream s;
+            std::string name = wad._fileEntries[i].nameStr().substr(3);
+            s << std::hex << name.substr(name.find_last_of("_") + 1, 16);
+            uint64_t hash = 0;
+            s >> hash;
+            for (int j = 0; j < texpacks.size(); j++)
+            {
+                if (texpacks[j]->ContainsTexture(hash))
+                {
+                    texpacks[j]->ExportGnf(outdir, hash, wad._fileEntries[i].nameStr(), dds);
+                    break;
+                }
+            }
+        }
+    }
+    return true;
+}
+bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std::filesystem::path& outdir, bool Lods = false)
+{
+    if (wad._header.fileCount < 1 || lodpacks.size() < 1)
+        return false;
+    if (!std::filesystem::exists(outdir))
+        return false;
+    vector<int> usedMeshBufferIndices;
+    for (int i = 0; i < wad._header.fileCount; i++)
+    {
+        if (wad._fileEntries[i].type == WADArchive::FileDesc::FileType::GOWR_MESH_DEFN && wad._fileEntries[i].nameStr().substr(0,4) == "MESH")
+        {
+            std::string name = wad._fileEntries[i].nameStr().substr(5);
+            std::stringstream meshDefStream;
+            std::stringstream meshBuffStream;
+            std::stringstream rigStream;
+            wad.GetFile(i, meshDefStream);
+            for (int j = 0; j < wad._header.fileCount; j++)
+            {
+                if (wad._fileEntries[j].type == WADArchive::FileDesc::FileType::GOWR_Skinned_Mesh_Buff && (wad._fileEntries[j].nameStr().find(name) != std::string::npos))
+                {
+                    if (std::find(usedMeshBufferIndices.begin(), usedMeshBufferIndices.end(), j) != usedMeshBufferIndices.end())
+                        continue;
+                    wad.GetFile(j, meshBuffStream);
+                    usedMeshBufferIndices.push_back(j);
+                    break;
+                }
+            }
+            //for (int j = 0; j < wad._header.fileCount; j++)
+            //{
+            //    if (wad._fileEntries[j].type == WadFile::FileType::Rig && (wad._FileEntries[j].name.find("Proto") != std::string::npos))
+            //    {
+            //        std::string sample = Utils::str_tolower(wad._FileEntries[j].name.substr(7, wad._FileEntries[j].name.length() - 7));
+            //        if (sample == name)
+            //        {
+            //            wad.GetBuffer(j, rigStream);
+            //            break;
+            //        }
+            //    }
+            //}
+            //Rig rig(rigStream);
+
+            vector<MeshInfo> meshInfos;
+
+            meshDefStream.seekg(0, ios::end);
+            GOWR::MESH::Parse(meshDefStream, meshInfos, meshDefStream.tellg());
+            Rig rig;
+
+            vector<RawMeshContainer> meshes;
+            for (int j = 0; j < meshInfos.size(); j++)
+            {
+                char buf[10];
+                sprintf_s(buf, "%04d", j);
+                string subname = "submesh_" + string(buf) + "_" + std::to_string(meshInfos[j].LODlvl);
+                if (meshInfos[j].LODlvl > 0 && !Lods)
+                    continue;
+                if (meshInfos[j].Hash == 0)
+                {
+                    if (meshBuffStream.tellp() != std::streampos(0))
+                    {
+                        meshes.push_back(containRawMesh(meshInfos[j], meshBuffStream, subname));
+                    }
+                }
+                else
+                {
+                    std::stringstream buffer;
+                    for (int k = 0; k < lodpacks.size(); k++)
+                    {
+                        if (lodpacks[k]->GetBuffer(meshInfos[j].Hash, buffer))
+                            break;
+                    }
+                    if (buffer.tellp() != std::streampos(0))
+                    {
+                        meshes.push_back(containRawMesh(meshInfos[j], buffer, subname));
+                    }
+                }
+            }
+            std::filesystem::path outfile = outdir / (wad._fileEntries[i].nameStr() + "---" + std::to_string(i) + ".glb");
+            WriteGLTF(outfile, meshes, rig);
+        }
+    }
+    return true;
+}
 //bool ExportAllRigidMesh(WadFile& wad, vector<Lodpack*>& lodpacks, const std::filesystem::path& outdir)
 //{
 //    if (wad._FileEntries.size() < 1 || lodpacks.size() < 1)
@@ -734,605 +722,249 @@ using Utils::CommandLine;
 //    }
 //    return true;
 //}
-
-void PrintHelp()
+CommandLine Init()
 {
-    cout << "\nGod of War Tool\n";
-    cout << "\nUsage:\n";
-    cout << "  GOWTool [command] [options]\n";
-    cout << "\nCommands:\n";
-    cout << "  wad       Target a Wad file for export.\n";
-    //cout << "  texpack   Target a Texpack file for export.\n";
-    //cout << "  settings  Change tool settings.\n";
-    cout << "\nOptions:\n";
-    cout << "  -h, --help  Show help and usage information.\n";
-}
+    CommandLine cmmdParse("God of War Tool", "Usage:\n  GOWTool");
+    cmmdParse.AddCommand("wad", "Target a Wad file for E/I.");
+    cmmdParse.AddOption("wad", "-p", "Input path to .wad file.", CommandLine::OptionType::MultiArgs);
+    cmmdParse.AddOption("wad", "-u", "Unpack WAD files.");
+    cmmdParse.AddOption("wad", "-m", "Export Meshes.");
+    cmmdParse.AddOption("wad", "-t", "Export Textures.");
 
+    cmmdParse.AddCommand("settings", "Change Tool Settings.");
+    cmmdParse.AddOption("settings", "-g", "Input path to GameDir", CommandLine::OptionType::SingleArg);
+
+    cmmdParse.AddCommand("texpack", "Target a Texpack file for E/I");
+    cmmdParse.AddOption("texpack", "-e", "Export Textures from Texpack.");
+    cmmdParse.AddOption("texpack", "-p", "Input path to .texpack file.", CommandLine::OptionType::MultiArgs);
+
+
+    return cmmdParse;
+}
 int main(int argc, char* argv[])
 {
-    //ImportModels(std::filesystem::path(R"(C:\Users\abhin\OneDrive\Desktop\New folder (6))"), std::filesystem::path(R"(C:\Users\abhin\OneDrive\Desktop\r_baldur00.wad)"));
 
-    //directory_iterator dir(R"(D:\gowr\Image0\exec\wad\orbis_le)");
+    CHAR charbuffer[260] = { 0 };
+    GetCurrentDirectoryA(sizeof(charbuffer), charbuffer);
+    std::filesystem::path configpath = std::filesystem::path(charbuffer) / "config.ini";
 
-    //int cnt = 0;
-    //for (auto& itr : dir)
-    //{
-    //    if (itr.path().extension().string() == ".wad")
-    //    {
-    //        WADArchive wad;
-    //        shared_ptr<fstream> fsptr = make_shared<fstream>(itr.path(), std::ios::binary | std::ios::in);
-    //        wad.Read(fsptr);
-    //        if (!wad.Test())
-    //        {
-    //            cnt++;
-    //            cout << itr.path().string();
-    //            cout << "\n";
-    //        }
-    //    }
-    //}
-    //cout << cnt;
-    CommandLine cmmdParse("God of War Tool","Usage:\n  GOWTool");
-    cmmdParse.AddCommand("wad", "Target a Wad file for export.");
-    cmmdParse.AddOption("wad", "-p", "Input path to .wad file.", CommandLine::OptionType::MultiArgs);
-    cmmdParse.AddOption("wad", "-u", "Unpack WAD files to folder.");
+    GetPrivateProfileStringA("Settings", "Gamedir", "", charbuffer, sizeof(charbuffer), configpath.string().c_str());
+    std::filesystem::path gamedir(charbuffer);
+
+    gamedir = gamedir / R"(exec\wad\orbis_le)";
+
+    CommandLine cmmdParse = Init();
 
     if (cmmdParse.Parse(argc, argv))
     {
+        if (cmmdParse._commands["texpack"].active || cmmdParse._commands["wad"]._options["-t"].active)
+        {
+            LoadLib();
+            if (!OodLZ_Decompress)
+            {
+                string msg = "oo2core_7_win64.dll is missing/cannot be loaded, Its Mandatory for textures export\n";
+                Utils::Logger::Error(msg.c_str());
+                return -1;
+            }
+        }
         if (cmmdParse._commands["wad"].active)
         {
             auto& cmmd = cmmdParse._commands["wad"];
-            if (cmmd._options["-u"].active)
-            {
-                auto& opn = cmmd._options["-p"];
-                for (auto itr = opn.args.begin(); itr != opn.args.end(); itr++)
-                {
-                    path wadPath = path(*itr);
-                    if (wadPath.empty() || !wadPath.is_absolute() || !std::filesystem::exists(wadPath) || !std::filesystem::is_regular_file(wadPath) || wadPath.extension().string() != ".wad")
-                    {
-                        string msg = "Invalid/Unspecified .wad file path: " + wadPath.string() + "\n";
-                        Utils::Logger::Error(msg.c_str());
-                        cmmdParse.PrintHelp();
-                        return -1;
-                    }
-                    path outDir = wadPath.parent_path() / wadPath.stem();
-                    WADArchive wad;
-                    shared_ptr<fstream> fsptr = make_shared<fstream>(wadPath, std::ios::binary | std::ios::in);
-                    wad.Read(fsptr);
 
-                    if (!wad.Test())
+            if (!cmmd._options["-m"].active && !cmmd._options["-u"].active && !cmmd._options["-t"].active)
+            {
+                Utils::Logger::Error("Task not specified\n");
+                cmmdParse.PrintHelp();
+                return -1;
+            }
+
+            if (cmmd._options["-m"].active || cmmd._options["-t"].active)
+            {
+                if (gamedir.empty() || !gamedir.is_absolute() || !std::filesystem::exists(gamedir) || !std::filesystem::is_directory(gamedir))
+                {
+                    string msg = "Invalid Dir: " + gamedir.string() + "\n";
+                    Utils::Logger::Error(msg.c_str());
+                    Utils::Logger::Error("GameDir\\exec\\wad\\orbis_le is required to obtain texpack / lodpack files\n");
+                    Utils::Logger::Error("GameDir (directory containing eboot.bin), pls change it through settings or edit config.ini\n");
+                    cmmdParse._commands["wad"].active = false;
+                    cmmdParse._commands["settings"].active = true;
+                    cmmdParse.PrintHelp();
+                    return -1;
+                }
+            }
+
+            std::vector<Lodpack*> lodpacks;
+            if (cmmd._options["-m"].active)
+            {
+                std::filesystem::directory_iterator dir(gamedir);
+                for (const std::filesystem::directory_entry& entry : dir)
+                {
+                    if (entry.path().extension().string() == ".lodpack")
                     {
-                        string msg = "Assertion Failed, Corrupted File/Bad Parsing Logic, file: " + wadPath.string() + "\n";
-                        Utils::Logger::Error(msg.c_str());
-                        continue;
+                        Lodpack* pack = new Lodpack();
+                        pack->Read(entry.path().string());
+                        lodpacks.push_back(pack);
                     }
+                }
+            }
+
+            std::vector<Texpack*> texpacks;
+            if (cmmd._options["-t"].active)
+            {
+                std::filesystem::directory_iterator dir(gamedir);
+                for (const std::filesystem::directory_entry& entry : dir)
+                {
+                    if (entry.path().extension().string() == ".texpack")
+                    {
+                        Texpack* pack = new Texpack(entry.path().string());
+                        texpacks.push_back(pack);
+                    }
+                }
+            }
+
+            auto& opnP = cmmd._options["-p"];
+            for (auto itr = opnP.args.begin(); itr != opnP.args.end(); itr++)
+            {
+                path wadPath = path(*itr);
+                if (wadPath.empty() || !wadPath.is_absolute() || !std::filesystem::exists(wadPath) || !std::filesystem::is_regular_file(wadPath) || wadPath.extension().string() != ".wad")
+                {
+                    string msg = "Invalid/Unspecified .wad file path: " + wadPath.string() + "\n";
+                    Utils::Logger::Error(msg.c_str());
+                    cmmdParse.PrintHelp();
+                    return -1;
+                }
+                path outDir = wadPath.parent_path() / wadPath.stem();
+                WADArchive wad;
+                shared_ptr<fstream> fsptr = make_shared<fstream>(wadPath, std::ios::binary | std::ios::in);
+                wad.Read(fsptr);
+
+                if (!wad.Test())
+                {
+                    string msg = "Assertion Failed, Corrupted File/Bad Parsing Logic, file: " + wadPath.string() + "\n";
+                    Utils::Logger::Error(msg.c_str());
+                    continue;
+                }
+
+                if(!std::filesystem::exists(outDir))
                     std::filesystem::create_directory(outDir);
-                    
+
+                if (cmmd._options["-u"].active)
+                {
                     if (wad.UnpackFiles(outDir.string()))
                     {
                         string msg = "Successfully unpacked all files to: " + outDir.string() + "\n";
                         Utils::Logger::Success(msg.c_str());
-                        return 0;
+                    }
+                    else
+                    {
+                        string msg = "Failed to unpacked all files from: " + wadPath.string() + "\n";
+                        Utils::Logger::Error(msg.c_str());
+                    }
+                }
+                if (cmmd._options["-t"].active)
+                {
+                    if (ExportAllTextures(wad, texpacks, outDir, true))
+                    {
+                        string msg = "Successfully exported textures to: " + outDir.string() + "\n";
+                        Utils::Logger::Success(msg.c_str());
+                    }
+                    else
+                    {
+                        string msg = "Failed to export textures from: " + wadPath.string() + "\n";
+                        Utils::Logger::Error(msg.c_str());
+                    }
+                }
+                if (cmmd._options["-m"].active)
+                {
+                    if (ExportAllSkinnedMesh(wad, lodpacks, outDir))
+                    {
+                        string msg = "Successfully exported meshes to: " + outDir.string() + "\n";
+                        Utils::Logger::Success(msg.c_str());
+                    }
+                    else
+                    {
+                        string msg = "Failed to export meshes files from: " + wadPath.string() + "\n";
+                        Utils::Logger::Error(msg.c_str());
                     }
                 }
             }
-            else
+        }
+        if (cmmdParse._commands["texpack"].active)
+        {
+            auto& cmmd = cmmdParse._commands["texpack"];
+
+            auto& opnP = cmmd._options["-p"];
+
+            if (!cmmd._options["-e"].active)
             {
-                Utils::Logger::Error("Unpack task not specified\n");
+                Utils::Logger::Error("Export Task not specified\n");
                 cmmdParse.PrintHelp();
                 return -1;
+            }
+
+            for (auto itr = opnP.args.begin(); itr != opnP.args.end(); itr++)
+            {
+                path texPath = path(*itr);
+                if (texPath.empty() || !texPath.is_absolute() || !std::filesystem::exists(texPath) || !std::filesystem::is_regular_file(texPath) || texPath.extension().string() != ".texpack")
+                {
+                    string msg = "Invalid/Unspecified .texpack file path: " + texPath.string() + "\n";
+                    Utils::Logger::Error(msg.c_str());
+                    cmmdParse.PrintHelp();
+                    return -1;
+                }
+                path outDir = texPath.parent_path() / texPath.stem();
+
+                if (!std::filesystem::exists(outDir))
+                    std::filesystem::create_directory(outDir);
+
+                if (cmmd._options["-e"].active)
+                {
+                    Texpack pack = Texpack(texPath.string());
+                    if (pack.ExportAllGnf(outDir, true))
+                    {
+                        Utils::Logger::Success(("Successfully exported all textures to: " + outDir.string() + "\n").c_str());
+                    }
+                    else
+                    {
+                        Utils::Logger::Error(("Failed To Export Textures From: " + texPath.string() + "\n").c_str());
+                    }
+                }
+                else
+                {
+                    Utils::Logger::Error("Export Task not specified\n");
+                    cmmdParse.PrintHelp();
+                    return -1;
+                }
+            }
+        }
+        if (cmmdParse._commands["settings"].active)
+        {
+            auto& cmmd = cmmdParse._commands["settings"];
+
+            auto& opnG = cmmd._options["-g"];
+
+            if (!cmmd._options["-g"].active)
+            {
+                Utils::Logger::Error("Export Task not specified\n");
+                cmmdParse.PrintHelp();
+                return -1;
+            }
+
+            gamedir = std::filesystem::path(opnG.args[0]);
+
+            if (gamedir.empty() || !gamedir.is_absolute() || !std::filesystem::exists(gamedir) || !std::filesystem::is_directory(gamedir))
+            {
+                Utils::Logger::Error(("Invalid gamedir specified: " + gamedir.string() + "\n").c_str());
+                cmmdParse.PrintHelp();
+                return -1;
+            }
+            if (WritePrivateProfileStringA("Settings", "Gamedir", gamedir.string().c_str(), configpath.string().c_str()))
+            {
+                Utils::Logger::Success("Gamedir Updated\n");
+                return 0;
             }
         }
     }
     else
         cmmdParse.PrintHelp();
-    //if (argc < 2)
-    //{
-    //    Utils::Logger::Error("Required argument was not provided.\n");
-    //    PrintHelp();
-    //    return -1;
-    //}
-
-    //CHAR charbuffer[260] = { 0 };
-    //GetCurrentDirectoryA(sizeof(charbuffer), charbuffer);
-    //std::filesystem::path configpath = std::filesystem::path(charbuffer) / "config.ini";
-
-    //GetPrivateProfileStringA("Settings", "Gamedir", "", charbuffer, sizeof(charbuffer), configpath.string().c_str());
-    //std::filesystem::path gamedir(charbuffer);
-
-    //std::string command(argv[1]);
-
-    //if (command == "-h" || command == "--help")
-    //{
-    //    PrintHelp();
-    //    return 0;
-    //}
-    //else if (command == "wad")
-    //{
-    //    auto LogHelp = []()
-    //    {
-    //        cout << "\nwad\n";
-    //        cout << "  Target a Wad file for export.\n";
-    //        cout << "\nUsage:\n";
-    //        cout << "  GOWTool wad [options]\n";
-    //        cout << "\nOptions:\n";
-    //        cout << "  -p, --path <path>        Input path to .wad file.\n";
-    //        cout << "  -o, --outpath <outpath>  Output directory.\n";
-    //        cout << "  -e, --extract            Extract all files from .wad.\n";
-    //        //cout << "  -m, --mesh               Export all meshes from .wad.\n";
-    //        //cout << "  -i, --import             Import all meshes into .wad.\n";
-    //        //cout << "  -t, --texture            Export all textures from .wad.\n";
-    //        //cout << "  -d, --dds                Export Textures in DDS Format.\n";
-    //        //cout << "  -h, --help               Show help and usage information.\n";
-
-    //    };
-    //    if (argc < 3)
-    //    {
-    //        Utils::Logger::Error("No option/arguments provided: ");
-    //        LogHelp();
-    //        return -1;
-    //    }
-    //    std::filesystem::path path;
-    //    std::filesystem::path outdir;
-    //    bool mesh = false;
-    //    bool texture = false;
-    //    bool extract = false;
-    //    bool imp = false;
-    //    bool dds = false;
-    //    for (int i = 2; i < argc; i++)
-    //    {
-    //        std::string op(argv[i]);
-    //        if (op == "-h" || op == "--help")
-    //        {
-    //            LogHelp();
-    //            return 0;
-    //        }
-    //        else if (op == "-p" || op == "--path")
-    //        {
-    //            if (argc > (i + 1))
-    //            {
-    //                path = std::filesystem::path(argv[i + 1]);
-    //                i++;
-    //            }
-    //            else
-    //            {
-    //                Utils::Logger::Error("\nRequired argument missing for option: -p");
-    //                LogHelp();
-    //                return -1;
-    //            }
-    //        }
-    //        else if (op == "-o" || op == "--outpath")
-    //        {
-    //            if (argc > (i + 1))
-    //            {
-    //                outdir = std::filesystem::path(argv[i + 1]);
-    //                i++;
-    //            }
-    //            else
-    //            {
-    //                Utils::Logger::Error("\nRequired argument missing for option: -o");
-    //                LogHelp();
-    //                return -1;
-    //            }
-    //        }
-    //        else if (op == "-e" || op == "--extract")
-    //        {
-    //            extract = true;
-    //        }
-    //        else if (op == "-i" || op == "--import")
-    //        {
-    //            imp = true;
-    //        }
-    //        else if (op == "-m" || op == "--mesh")
-    //        {
-    //            mesh = true;
-    //        }
-    //        else if (op == "-d" || op == "--dds")
-    //        {
-    //            dds = true;
-    //        }
-    //        else if (op == "-t" || op == "--texture")
-    //        {
-    //            texture = true;
-    //        }
-    //        else
-    //        {
-    //            Utils::Logger::Error(("\nInvalid option or argument: " + op).c_str());
-    //            LogHelp();
-    //            return -1;
-    //        }
-    //    }
-    //    if (!mesh && !texture && !extract && !imp)
-    //    {
-    //        Utils::Logger::Error("\nExport/Import task not specified");
-    //        LogHelp();
-    //        return -1;
-    //    }
-    //    if (imp && (mesh || texture || extract))
-    //    {
-    //        Utils::Logger::Error("\nCan't Export and Import at the same time, specfiy only one at a time");
-    //        LogHelp();
-    //        return -1;
-    //    }
-    //    if (imp)
-    //    {
-    //        if (path.empty() || !path.is_absolute() || !std::filesystem::exists(path) || !std::filesystem::is_directory(gamedir))
-    //        {
-    //            Utils::Logger::Error(("\nInvalid/Unspecified Import Folder path: " + path.string()).c_str());
-    //            LogHelp();
-    //            return -1;
-    //        }
-    //    }
-    //    else
-    //    {
-    //        if (path.empty() || !path.is_absolute() || !std::filesystem::exists(path) || !std::filesystem::is_regular_file(path) || path.extension().string() != ".wad")
-    //        {
-    //            Utils::Logger::Error(("\nInvalid/Unspecified .wad file path: " + path.string()).c_str());
-    //            LogHelp();
-    //            return -1;
-    //        }
-    //    }
-    //    if (gamedir.empty() || !gamedir.is_absolute() || !std::filesystem::exists(gamedir) || !std::filesystem::is_directory(gamedir))
-    //    {
-    //        Utils::Logger::Error("\nGame dir is either not specified in config.ini or its invalid, pls change it through settings or edit config.ini");
-    //        LogHelp();
-    //        return -1;
-    //    }
-    //    if (outdir.empty())
-    //    {
-    //        outdir = path.parent_path() / path.stem();
-    //        std::filesystem::create_directory(outdir);
-    //    }
-    //    if(!outdir.is_absolute() || !std::filesystem::exists(outdir) || !std::filesystem::is_directory(outdir))
-    //    {
-    //        Utils::Logger::Error(("\nInvalid outdir specified: " + outdir.string()).c_str());
-    //        LogHelp();
-    //        return -1;
-    //    }
-    //    WadFile wad;
-    //    wad.Read(path);
-    //    if (extract)
-    //    {
-    //        if (ExtractAllFiles(wad, outdir))
-    //        {
-    //            Utils::Logger::Success(("\nSuccessfully extracted all files to: " + outdir.string()).c_str());
-    //        }
-    //        else
-    //        {
-    //            Utils::Logger::Error("\nMeshes export Failed.");
-    //        }
-    //    }
-    //    if (mesh)
-    //    {
-    //        std::filesystem::recursive_directory_iterator dir(gamedir);
-    //        std::vector<Lodpack*> lodpacks;
-    //        for (const std::filesystem::directory_entry& entry : dir)
-    //        {
-    //            if (entry.path().extension().string() == ".lodpack")
-    //            {
-    //                Lodpack* pack = new Lodpack();
-    //                pack->Read(entry.path().string());
-    //                lodpacks.push_back(pack);
-    //            }
-    //        }
-    //        if (lodpacks.size() < 1)
-    //        {
-    //            Utils::Logger::Error("\nspecified gamedir(including sub-directories) doesn't contain any .lodpack files, export failed");
-    //            return -1;
-    //        }
-    //        if (ExportAllSkinnedMesh(wad, lodpacks, outdir) && ExportAllRigidMesh(wad, lodpacks, outdir))
-    //        {
-    //            Utils::Logger::Success(("\nSuccessfully exported all meshes to: " + outdir.string()).c_str());
-    //        }
-    //        else
-    //        {
-    //            Utils::Logger::Error("\nMeshes export Failed.");
-    //        }
-    //    }
-    //    if (texture)
-    //    {
-    //        std::filesystem::recursive_directory_iterator dir(gamedir);
-    //        std::vector<Texpack*> texpacks;
-    //        for (const std::filesystem::directory_entry& entry : dir)
-    //        {
-    //            if (entry.path().extension().string() == ".texpack")
-    //            {
-    //                Texpack* pack = new Texpack(entry.path().string());
-    //                texpacks.push_back(pack);
-    //            }
-    //        }
-    //        if (texpacks.size() < 1)
-    //        {
-    //            Utils::Logger::Error("\nspecified gamedir(including sub-directories) doesn't contain any .texpack files, export failed");
-    //            return -1;
-    //        }
-    //        if (ExportAllTextures(wad, texpacks, outdir,dds))
-    //        {
-    //            Utils::Logger::Success(("\nSuccessfully exported all textures to: " + outdir.string()).c_str());
-    //        }
-    //        else
-    //        {
-    //            Utils::Logger::Error("\nTextures export Failed.");
-    //        }
-    //    }
-    //    if (imp)
-    //    {
-    //        std::filesystem::recursive_directory_iterator dir(gamedir);
-    //        std::vector<Lodpack*> lodpacks;
-    //        for (const std::filesystem::directory_entry& entry : dir)
-    //        {
-    //            if (entry.path().extension().string() == ".lodpack")
-    //            {
-    //                Lodpack* pack = new Lodpack();
-    //                pack->Read(entry.path().string());
-    //                lodpacks.push_back(pack);
-    //            }
-    //        }
-    //        if (lodpacks.size() < 1)
-    //        {
-    //            Utils::Logger::Error("\nspecified gamedir(including sub-directories) doesn't contain any .lodpack files, export failed");
-    //            return -1;
-    //        }
-
-    //        std::filesystem::recursive_directory_iterator dir1(gamedir);
-    //        for (const std::filesystem::directory_entry& entry : dir1)
-    //        {
-    //            if (entry.path().extension().string() == ".wad" && entry.path().filename().stem().string() == path.filename().string())
-    //            {
-    //                ImportModels(path, entry.path(), lodpacks);
-    //                return 0;
-    //            }
-    //        }
-    //        Utils::Logger::Error("\nWad File by Import Folder Name Not Present in GameDir.");
-    //        Utils::Logger::Error("\nMeshes Import Failed.");
-    //        return -1;
-    //    }
-    //    return 0;
-    //}
-    //else if (command == "texpack")
-    //{
-    //    auto LogHelp = []()
-    //    {
-    //        cout << "\ntexpack\n";
-    //        cout << "  Target a Texpack file for export.\n";
-    //        cout << "\nUsage:\n";
-    //        cout << "  GOWTool texpack [options]\n";
-    //        cout << "\nOptions:\n";
-    //        cout << "  -e, --export             Export textures from .texpack file.\n";
-    //        cout << "  -d, --dds                Export Textures in DDS Format.\n";
-    //        cout << "  -i, --import             Import textures and pack .texpack file.\n";
-    //        cout << "  -p, --path <path>        path to .texpack file or path to directory containing dds/gnf files for import.\n";
-    //        cout << "  -o, --outpath <outpath>  Output directory.\n";
-    //    };
-    //    if (argc < 3)
-    //    {
-    //        Utils::Logger::Error("\nNo option/arguments provided: ");
-    //        LogHelp();
-    //        return -1;
-    //    }
-    //    std::filesystem::path path;
-    //    std::filesystem::path outdir;
-    //    bool imp = false;
-    //    bool exp = false;
-    //    bool dds = false;
-    //    for (int i = 2; i < argc; i++)
-    //    {
-    //        std::string op(argv[i]);
-    //        if (op == "-h" || op == "--help")
-    //        {
-    //            LogHelp();
-    //            return 0;
-    //        }
-    //        else if (op == "-p" || op == "--path")
-    //        {
-    //            if (argc > (i + 1))
-    //            {
-    //                path = std::filesystem::path(argv[i + 1]);
-    //                i++;
-    //            }
-    //            else
-    //            {
-    //                Utils::Logger::Error("Required argument missing for option: -p");
-    //                LogHelp();
-    //                return -1;
-    //            }
-    //        }
-    //        else if (op == "-o" || op == "--outpath")
-    //        {
-    //            if (argc > (i + 1))
-    //            {
-    //                outdir = std::filesystem::path(argv[i + 1]);
-    //                i++;
-    //            }
-    //            else
-    //            {
-    //                Utils::Logger::Error("Required argument missing for option: -o");
-    //                LogHelp();
-    //                return -1;
-    //            }
-    //        }
-    //        else if (op == "-e" || op == "--export")
-    //        {
-    //            exp = true;
-
-    //        }
-    //        else if (op == "-i" || op == "--import")
-    //        {
-    //            imp = true;
-    //        }
-    //        else if (op == "-d" || op == "--dds")
-    //        {
-    //            dds = true;
-    //        }
-    //        else
-    //        {
-    //            Utils::Logger::Error(("Invalid option or argument: " + op).c_str());
-    //            LogHelp();
-    //            return -1;
-    //        }
-    //    }
-    //    if (imp && exp)
-    //    {
-    //        Utils::Logger::Error("\nCannot export and import textures at the same time, choose one!");
-    //        LogHelp();
-    //        return -1;
-    //    }
-    //    if (!imp && !exp)
-    //    {
-    //        Utils::Logger::Error("\nTexpack export or import not specified!");
-    //        LogHelp();
-    //        return -1;
-    //    }
-    //    if (outdir.empty())
-    //    {
-    //        outdir = path.parent_path() / path.stem();
-    //        std::filesystem::create_directory(outdir);
-    //    }
-    //    if (!outdir.is_absolute() || !std::filesystem::exists(outdir) || !std::filesystem::is_directory(outdir))
-    //    {
-    //        Utils::Logger::Error(("\nInvalid outdir specified: " + outdir.string()).c_str());
-    //        LogHelp();
-    //        return -1;
-    //    }
-    //    if (exp)
-    //    {
-    //        if (path.empty() || !path.is_absolute() || !std::filesystem::exists(path) || !std::filesystem::is_regular_file(path) || path.extension().string() != ".texpack")
-    //        {
-    //            Utils::Logger::Error(("\nInvalid/Unspecified .texpack file path: " + path.string()).c_str());
-    //            LogHelp();
-    //            return -1;
-    //        }
-    //        Texpack pack = Texpack(path.string());
-    //        if (pack.ExportAllGnf(outdir,dds))
-    //        {
-    //            Utils::Logger::Success(("\nSuccessfully exported all textures to: " + outdir.string()).c_str());
-    //            return 0;
-    //        }
-    //        else
-    //        {
-    //            Utils::Logger::Error("\nTextures export Failed.");
-    //            return -1;
-    //        }
-    //    }
-    //    if (imp)
-    //    {
-    //        if (!path.is_absolute() || !std::filesystem::exists(path) || !std::filesystem::is_directory(path))
-    //        {
-    //            Utils::Logger::Error(("\nInvalid/Unspecified dds/gnf directory " + path.string()).c_str());
-    //            LogHelp();
-    //            return -1;
-    //        }
-    //        std::filesystem::recursive_directory_iterator dir(gamedir);
-    //        std::vector<Texpack*> texpacks;
-    //        for (const std::filesystem::directory_entry& entry : dir)
-    //        {
-    //            if (entry.path().extension().string() == ".texpack")
-    //            {
-    //                Texpack* pack = new Texpack(entry.path().string());
-    //                texpacks.push_back(pack);
-    //            }
-    //        }
-    //        if (texpacks.size() < 1)
-    //        {
-    //            Utils::Logger::Error("\nspecified gamedir(including sub-directories) doesn't contain any .texpack files, import failed");
-    //            return -1;
-    //        }
-    //        if (ImportAllGnf(path,texpacks, gamedir))
-    //        {
-    //            Utils::Logger::Success("\nSuccessfully Imported all and packed textures to .texpack ");
-    //            return 0;
-    //        }
-    //        else
-    //        {
-    //            Utils::Logger::Error("\nTextures export Failed.");
-    //            return -1;
-    //        }
-    //    }
-    //}
-    //else if (command == "settings")
-    //{
-    //    auto LogHelp = []()
-    //    {
-    //        cout << "\nsettings\n";
-    //        cout << "  Change tool settings.\n";
-    //        cout << "\nUsage:\n";
-    //        cout << "  GOWTool settings [options]\n";
-    //        cout << "\nOptions:\n";
-    //        cout << "  -g, --gamedir <gamedir>  Input path to the God of War gamefiles directory\n";
-    //    };
-    //    if (argc < 3)
-    //    {
-    //        Utils::Logger::Error("\nNo option/arguments provided: ");
-    //        LogHelp();
-    //        return -1;
-    //    }
-    //    for (int i = 2; i < argc; i++)
-    //    {
-    //        std::string op(argv[i]);
-    //        if (op == "-h" || op == "--help")
-    //        {
-    //            LogHelp();
-    //            return 0;
-    //        }
-    //        else if (op == "-g" || op == "--gamedir")
-    //        {
-    //            if (argc > (i + 1))
-    //            {
-    //                gamedir = std::filesystem::path(argv[i + 1]);
-    //                i++;
-    //            }
-    //            else
-    //            {
-    //                Utils::Logger::Error("\nRequired argument missing for option: -g");
-    //                LogHelp();
-    //                return -1;
-    //            }
-    //        }
-    //        else
-    //        {
-    //            Utils::Logger::Error(("\nInvalid option or argument: " + op).c_str());
-    //            LogHelp();
-    //            return -1;
-    //        }
-    //    }
-    //    if (gamedir.empty() || !gamedir.is_absolute() || !std::filesystem::exists(gamedir) || !std::filesystem::is_directory(gamedir))
-    //    {
-    //        Utils::Logger::Error(("\nInvalid gamedir specified: " + gamedir.string()).c_str());
-    //        LogHelp();
-    //        return -1;
-    //    }
-    //    if (WritePrivateProfileStringA("Settings", "Gamedir", gamedir.string().c_str(), configpath.string().c_str()))
-    //    {
-    //        Utils::Logger::Success("\nGamedir Updated");
-    //        return 0;
-    //    }
-    //}
-    //else
-    //{
-    //    Utils::Logger::Error(("Invalid command or argument: " + command).c_str());
-    //    PrintHelp();
-    //    return -1;
-    //}
-
-    //return 0;
-    ///*
-    //CHAR charbuffer[260] = { 0 };
-    //GetCurrentDirectoryA(sizeof(charbuffer), charbuffer);
-
-    //std::filesystem::path configpath = std::filesystem::path(charbuffer) / "config.ini";
-
-    //GetPrivateProfileStringA("Settings", "Gamedir", "", charbuffer, sizeof(charbuffer), configpath.string().c_str());
-    //std::string gamedirstr(charbuffer);
-    //if (gamedirstr.empty())
-    //{
-    //    gamedirstr = std::filesystem::path(Utils::FileDialogs::OpenFile("GOW Boot (eboot.bin)\0eboot.bin\0","Open God of War eboot.bin")).parent_path().string();
-    //    if (gamedirstr.empty())
-    //    {
-    //        return -1;
-    //    }
-    //    if (!WritePrivateProfileStringA("Settings", "Gamedir",gamedirstr.c_str(), configpath.string().c_str()))
-    //    {
-    //        return -1;
-    //    }
-    //}
-    //*/
 } 

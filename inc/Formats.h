@@ -15,3 +15,12 @@ class SmshDefinition
 public:
 	vector<MeshInfo> ReadSmsh(std::iostream& file);
 };
+
+namespace GOWR
+{
+	class MESH
+	{
+	public:
+		static bool Parse(std::iostream& stream, vector<MeshInfo>& meshes, size_t endOffOrSize , size_t baseOff = 0);
+	};
+}

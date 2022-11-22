@@ -4,12 +4,12 @@
 class Rig
 {
 public:
-	uint16_t boneCount{0};
+	uint16_t boneCount{ 0 };
 	int16_t* boneParents;
 	string* boneNames;
 	Matrix4x4* matrix;
 	Matrix4x4* IBMs;
 public:
-	Rig(std::stringstream& fs);
+	Rig(std::iostream& fs);
 	Rig() = default;
 };

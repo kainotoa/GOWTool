@@ -284,7 +284,7 @@ bool GetRawMeshesFromGLTF(const Document& document, const GLTFResourceReader& re
                 const auto data = resourceReader.ReadBinaryData<uint16_t>(document, accessor);
 
                 meshContainer.IndCount = accessor.count;
-                meshContainer.indices = new uint16_t[meshContainer.IndCount];
+                meshContainer.indices = new uint32_t[meshContainer.IndCount];
 
                 for (uint32_t i = 0; i < meshContainer.IndCount; i+=3)
                 {

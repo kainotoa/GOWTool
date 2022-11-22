@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "utils.h"
+#include <iomanip>
 
 namespace Utils
 {
@@ -177,7 +178,9 @@ namespace Utils
 					cout << "Options:\n";
 					for (auto itr1 = itr->second._options.begin(); itr1 != itr->second._options.end(); itr1++)
 					{
-						cout << "  " + itr1->first + "\t\t" + itr1->second.desc + "\n";
+						cout << "  ";
+						cout.width(0x10);
+						cout << std::left << itr1->first << itr1->second.desc + "\n";
 					}
 					return;
 				}
@@ -188,7 +191,9 @@ namespace Utils
 		cout << "Commands:\n";
 		for (auto itr = _commands.begin(); itr != _commands.end(); itr++)
 		{
-			cout << "  " + itr->first + "\t\t" + itr->second.desc + "\n";
+			cout << "  ";
+			cout.width(0x10);
+			cout << std::left << itr->first << itr->second.desc + "\n";
 		}
 	}
 }

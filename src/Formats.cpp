@@ -78,11 +78,16 @@ namespace GOWR
 
 			stream.seekg(0x10, ios::cur);
 
+
 			uint8_t buffCount = 0;
+			uint8_t indicesStride = 0;
 			uint8_t compCount = 0;
 			stream.read((char*)&buffCount, sizeof buffCount);
-			stream.seekg(0x3, ios::cur);
+			stream.read((char*)&indicesStride, sizeof indicesStride);
+			stream.seekg(0x2, ios::cur);
 			stream.read((char*)&compCount, sizeof buffCount);
+
+			info.indicesStride = indicesStride;
 
 			stream.seekg(baseOff + i * sizeof defOff + defOff + compOffset);
 			info.Components = vector<Component>(compCount);
@@ -148,6 +153,62 @@ namespace GOWR
 			meshes.push_back(info);
 		}
 
+		return true;
+	}
+	bool MG::Parse(std::iostream& stream, vector<MeshInfo>& meshes, size_t mgBufferSize, size_t baseOff)
+	{
+		if (mgBufferSize < 0x32)
+			return false;
+		stream.seekg(0, std::ios::end);
+		if (stream.tellg() < mgBufferSize)
+			return false;
+
+		uint16_t defCount { 0 };
+		stream.seekg(baseOff + 0x30);
+		stream.read((char*)&defCount, sizeof defCount);
+
+		uint32_t defOff = 0;
+
+		if (mgBufferSize < (defCount * sizeof defOff + 0x44))
+			return false;
+
+		for (uint16_t i = 0; i < defCount; i++)
+		{
+			stream.seekg(baseOff + i * sizeof defOff + 0x44);
+
+			stream.read((char*)&defOff, sizeof defOff);
+
+			stream.seekg(baseOff + defOff);
+
+			uint16_t parentBone = 0;
+			stream.read((char*)&parentBone, sizeof parentBone);
+
+			uint8_t lodCount = 0;
+			stream.read((char*)&lodCount, sizeof lodCount);
+
+			uint32_t off = 0;
+			for (uint8_t j = 0; j < lodCount; j++)
+			{
+				stream.seekg(baseOff + defOff + j * sizeof off + 0x38);
+
+				stream.read((char*)&off, sizeof off);
+
+				stream.seekg(baseOff + defOff + off);
+
+				uint32_t cnt = 0;
+				stream.read((char*)&cnt, sizeof cnt);
+
+				stream.seekg(0x6, ios::cur);
+				for (uint32_t k = 0; k < cnt; k++)
+				{
+					uint16_t idx = 0;
+					stream.read((char*)&idx, sizeof idx);
+
+					meshes[idx].boneAssociated = parentBone;
+					meshes[idx].LODlvl = j;
+				}
+			}
+		}
 		return true;
 	}
 }

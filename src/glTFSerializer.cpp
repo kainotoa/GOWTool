@@ -65,7 +65,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
         bufferBuilder.AddBufferView(BufferViewTarget::ELEMENT_ARRAY_BUFFER);
 
         // Add an Accessor for the indices
-        std::vector<uint16_t> indices;
+        std::vector<uint32_t> indices;
 
         for (uint32_t i = 0; i < expMesh.IndCount; i += 3)
         {
@@ -74,7 +74,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
             indices.push_back(expMesh.indices[i + 2]);
         }
         // Copy the Accessor's id - subsequent calls to AddAccessor may invalidate the returned reference
-        meshPrimitive.indicesAccessorId = bufferBuilder.AddAccessor(indices, { TYPE_SCALAR, COMPONENT_UNSIGNED_SHORT }).id;
+        meshPrimitive.indicesAccessorId = bufferBuilder.AddAccessor(indices, { TYPE_SCALAR, COMPONENT_UNSIGNED_INT }).id;
     }
     
     if (expMesh.vertices != nullptr)

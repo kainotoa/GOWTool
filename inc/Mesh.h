@@ -11,7 +11,7 @@ struct RawMeshContainer
 	Vec2* txcoord0{ nullptr };
 	Vec2* txcoord1{ nullptr };
 	Vec2* txcoord2{ nullptr };
-	uint16_t* indices{ nullptr };
+	uint32_t* indices{ nullptr };
 	uint16_t** joints{ nullptr };
 	float** weights{ nullptr };
 	std::string name;
@@ -80,4 +80,6 @@ struct MeshInfo
 	uint16_t boneAssociated{ 0 };
 	
 	string name;
+
+	uint8_t indicesStride = 2;
 };

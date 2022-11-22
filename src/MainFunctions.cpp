@@ -204,7 +204,7 @@ RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::iostream& file,std::str
         case PrimitiveTypes::JOINTS0:
             //cout << "Joint0" << meshinfo.vertexOffset << " " << (uint16_t)meshinfo.Components[i].offset << " " << (uint16_t)meshinfo.Components[i].bufferIndex << " " << (uint16_t)meshinfo.bufferOffset[meshinfo.Components[i].bufferIndex] << " " << (uint16_t)meshinfo.bufferStride[meshinfo.Components[i].bufferIndex] << "\n";
 
-            for (uint32_t v = 0; v < meshinfo.vertCount; v++)
+            /*for (uint32_t v = 0; v < meshinfo.vertCount; v++)
             {
                 file.seekg(meshinfo.Components[i].offset + meshinfo.bufferOffset[meshinfo.Components[i].bufferIndex] + (uint64_t)meshinfo.bufferStride[meshinfo.Components[i].bufferIndex] * (uint64_t)v + off);
 
@@ -220,7 +220,19 @@ RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::iostream& file,std::str
                     Mesh.joints[v][2] = z;
                     Mesh.joints[v][3] = w;
                 }
-                else
+                else if(meshinfo.Components[i].dataType == DataTypes::WORD_STRUCT_0)
+                {
+                    uint32_t x, y, z, w;
+                    file.read((char*)&x, sizeof(uint32_t));
+                    file.read((char*)&y, sizeof(uint32_t));
+                    file.read((char*)&z, sizeof(uint32_t));
+                    file.read((char*)&w, sizeof(uint32_t));
+
+                    if(x > 319 || y > 319 || z > 319 || w > 319)
+                        cout << "\n";
+
+                }
+                else if(meshinfo.Components[i].dataType == DataTypes::HALFWORD_STRUCT_1)
                 {
                     uint16_t x, y, z, w;
                     file.read((char*)&x, sizeof(uint16_t));
@@ -232,19 +244,46 @@ RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::iostream& file,std::str
                     Mesh.joints[v][2] = z;
                     Mesh.joints[v][3] = w;
                 }
-            }
+                else
+                {
+                    throw std::exception("Invalid struct");
+
+                }
+            }*/
             break;
         case PrimitiveTypes::WEIGHTS0:
             //cout << "Wgt0" << meshinfo.vertexOffset << " " << meshinfo.Components[i].offset << " " << meshinfo.Components[i].bufferIndex << " " << meshinfo.bufferOffset[meshinfo.Components[i].bufferIndex] << " " << meshinfo.bufferStride[meshinfo.Components[i].bufferIndex] << "\n";
 
-            uint32_t wgtRead;
+            /*uint32_t wgtRead;
             for (uint32_t v = 0; v < meshinfo.vertCount; v++)
             {
                 file.seekg(meshinfo.Components[i].offset + meshinfo.bufferOffset[meshinfo.Components[i].bufferIndex] + (uint64_t)meshinfo.bufferStride[meshinfo.Components[i].bufferIndex] * (uint64_t)v + off);
 
-                file.read((char*)&wgtRead, sizeof(uint32_t));
+                Vec4 vec;
 
-                Vec4 vec = TenBitUnsigned(wgtRead);
+                if (meshinfo.Components[i].dataType == DataTypes::WORD_STRUCT_1)
+                {
+                    file.read((char*)&wgtRead, sizeof(uint32_t));
+                    vec = TenBitUnsigned(wgtRead);
+                }
+                else if (meshinfo.Components[i].dataType == DataTypes::WORD_STRUCT_0)
+                {
+                    uint32_t a[4] { 0.f };
+                    for (uint8_t l = 0; l < meshinfo.components[i].elementcount; l++)
+                    {
+                        file.read((char*)&a[l], sizeof (uint32_t));
+                    }
+
+                    vec4 vec0 = tenbitunsigned(a[0]);
+                    vec4 vec1 = tenbitunsigned(a[1]);
+                    vec4 vec2 = tenbitunsigned(a[2]);
+                    vec4 vec3 = tenbitunsigned(a[3]);
+                    cout << "\n";
+                }
+                else
+                {
+                    throw std::exception("Invalid struct");
+                }
 
                 float sum = vec.X + vec.Y + vec.Z;
                 float NorRatio = 1 / sum;
@@ -252,18 +291,35 @@ RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::iostream& file,std::str
                 Mesh.weights[v][1] = vec.Y * NorRatio;
                 Mesh.weights[v][2] = vec.Z * NorRatio;
                 Mesh.weights[v][3] = 0.f;
-            }
+            }*/
             break;
         default:
             break;
         }
     }
 
-    Mesh.indices = new uint16_t[Mesh.IndCount];
+    Mesh.indices = new uint32_t[Mesh.IndCount];
     file.seekg((uint64_t)meshinfo.indicesOffset + (uint64_t)off);
-    for (uint32_t i = 0; i < meshinfo.indCount; i++)
+
+    if (meshinfo.indicesStride == 2)
     {
-        file.read((char*)&Mesh.indices[i], sizeof(uint16_t));
+        for (uint32_t i = 0; i < meshinfo.indCount; i++)
+        {
+            uint16_t temp = 0;
+            file.read((char*)&temp, sizeof uint16_t );
+            Mesh.indices[i] = temp;
+        }
+    }
+    else if (meshinfo.indicesStride == 4)
+    {
+        for (uint32_t i = 0; i < meshinfo.indCount; i++)
+        {
+            file.read((char*)&Mesh.indices[i], sizeof uint32_t );
+        }
+    }
+    else
+    {
+        throw std::exception("Invalid Indices Stride");
     }
 
     return Mesh;

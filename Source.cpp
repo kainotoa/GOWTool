@@ -584,12 +584,14 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
     if (!std::filesystem::exists(outdir))
         return false;
     vector<int> usedMeshBufferIndices;
+    vector<int> usedMgDefIndices;
     for (int i = 0; i < wad._header.fileCount; i++)
     {
         if (wad._fileEntries[i].type == WADArchive::FileDesc::FileType::GOWR_MESH_DEFN && wad._fileEntries[i].nameStr().substr(0,4) == "MESH")
         {
             std::string name = wad._fileEntries[i].nameStr().substr(5);
             std::stringstream meshDefStream;
+            std::stringstream mgDefStream;
             std::stringstream meshBuffStream;
             std::stringstream rigStream;
             wad.GetFile(i, meshDefStream);
@@ -604,25 +606,41 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
                     break;
                 }
             }
-            //for (int j = 0; j < wad._header.fileCount; j++)
-            //{
-            //    if (wad._fileEntries[j].type == WadFile::FileType::Rig && (wad._FileEntries[j].name.find("Proto") != std::string::npos))
-            //    {
-            //        std::string sample = Utils::str_tolower(wad._FileEntries[j].name.substr(7, wad._FileEntries[j].name.length() - 7));
-            //        if (sample == name)
-            //        {
-            //            wad.GetBuffer(j, rigStream);
-            //            break;
-            //        }
-            //    }
-            //}
-            //Rig rig(rigStream);
+            for (int j = 0; j < wad._header.fileCount; j++)
+            {
+                if (wad._fileEntries[j].type == WADArchive::FileDesc::FileType::GOWR_MG_DEFN && (wad._fileEntries[j].nameStr().find(name) != std::string::npos))
+                {
+                    if (std::find(usedMgDefIndices.begin(), usedMgDefIndices.end(), j) != usedMgDefIndices.end())
+                        continue;
+                    wad.GetFile(j, mgDefStream);
+                    usedMgDefIndices.push_back(j);
+                    break;
+                }
+            }
+
+            Rig rig;
+
+            for (int j = 0; j < wad._header.fileCount; j++)
+            {
+                if (wad._fileEntries[j].type == WADArchive::FileDesc::FileType::GOWR_GOPROTO_DEFN && (wad._fileEntries[j].nameStr().find("Proto") != std::string::npos))
+                {
+                    std::string sample = Utils::str_tolower(wad._fileEntries[j].nameStr().substr(7, wad._fileEntries[j].nameStr().length() - 7));
+                    if (sample == name.substr(0,name.length() - 2))
+                    {
+                        wad.GetFile(j, rigStream);
+                        rig = Rig(rigStream);
+                        break;
+                    }
+                }
+            }
 
             vector<MeshInfo> meshInfos;
 
             meshDefStream.seekg(0, ios::end);
             GOWR::MESH::Parse(meshDefStream, meshInfos, meshDefStream.tellg());
-            Rig rig;
+
+            mgDefStream.seekg(0, ios::end);
+            GOWR::MG::Parse(mgDefStream, meshInfos, mgDefStream.tellg());
 
             vector<RawMeshContainer> meshes;
             for (int j = 0; j < meshInfos.size(); j++)
@@ -734,7 +752,7 @@ CommandLine Init()
     cmmdParse.AddCommand("settings", "Change Tool Settings.");
     cmmdParse.AddOption("settings", "-g", "Input path to GameDir", CommandLine::OptionType::SingleArg);
 
-    cmmdParse.AddCommand("texpack", "Target a Texpack file for E/I");
+    cmmdParse.AddCommand("texpack", "Target a Texpack file for E/I.");
     cmmdParse.AddOption("texpack", "-e", "Export Textures from Texpack.");
     cmmdParse.AddOption("texpack", "-p", "Input path to .texpack file.", CommandLine::OptionType::MultiArgs);
 

@@ -14,6 +14,21 @@ using std::filesystem::path;
 class WADArchive
 {
 public:
+	enum class FileType : uint16_t
+	{
+		GOWR_MESH_MAP = 0x0,
+		GOWR_MESH_DEFN = 0x1,
+		RigidMeshDefData = 0xB,
+		Rig = 0x3D,
+		GOWR_GOPROTO_RIG = 0x3F,
+		SkinnedMeshDef = 0x98,
+		GOWR_MG_DEFN,
+		GOWR_SHADER = 0x801E,
+		Texture = 0x80A1,
+		GOWR_TEXTURE,
+		SkinnedMeshBuff = 0x8198,
+		GOWR_MG_GPU_BUFF
+	};
 	struct Header
 	{
 		uint32_t magic = 0x434F5457;
@@ -36,20 +51,6 @@ public:
 	};
 	struct FileDesc
 	{
-		enum class FileType : uint16_t
-		{
-			GOWR_MESH_MAP = 0x0,
-			GOWR_MESH_DEFN = 0x1,
-			RigidMeshDefData = 0xB,
-			Rig = 0x3D,
-			GOWR_GOPROTO_DEFN = 0x3F,
-			SkinnedMeshDef = 0x98,
-			GOWR_MG_DEFN,
-			Texture = 0x80A1,
-			GOWR_TEXTURE,
-			SkinnedMeshBuff = 0x8198,
-			GOWR_Skinned_Mesh_Buff
-		};
 		uint16_t group = 0;
 		FileType type;
 		uint32_t size = 0;

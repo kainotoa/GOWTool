@@ -20,6 +20,9 @@ using std::filesystem::recursive_directory_iterator;
 
 using Utils::CommandLine;
 
+
+extern std::map<PrimitiveTypes, std::set<std::pair<DataTypes, int>>> compMap;
+extern std::set<DataTypes> dataSet;
 //bool ImportModels(const std::filesystem::path& wadDir, const std::filesystem::path& wadPath, vector<Lodpack*>& lodpacks)
 //{
 //    std::map<uint64_t, std::stringstream*> buffersHashmap;
@@ -558,7 +561,7 @@ bool ExportAllTextures(WADArchive& wad, vector<Texpack*>& texpacks, const std::f
         return false;
     for (int i = 0; i < wad._fileEntries.size(); i++)
     {
-        if (wad._fileEntries[i].type == WADArchive::FileDesc::FileType::GOWR_TEXTURE)
+        if (wad._fileEntries[i].type == WADArchive::FileType::GOWR_TEXTURE)
         {
             std::stringstream s;
             std::string name = wad._fileEntries[i].nameStr().substr(3);
@@ -587,7 +590,7 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
     vector<int> usedMgDefIndices;
     for (int i = 0; i < wad._header.fileCount; i++)
     {
-        if (wad._fileEntries[i].type == WADArchive::FileDesc::FileType::GOWR_MESH_DEFN && wad._fileEntries[i].nameStr().substr(0,4) == "MESH")
+        if (wad._fileEntries[i].type == WADArchive::FileType::GOWR_MESH_DEFN && wad._fileEntries[i].nameStr().substr(0,4) == "MESH")
         {
             std::string name = wad._fileEntries[i].nameStr().substr(5);
             std::stringstream meshDefStream;
@@ -597,7 +600,7 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
             wad.GetFile(i, meshDefStream);
             for (int j = 0; j < wad._header.fileCount; j++)
             {
-                if (wad._fileEntries[j].type == WADArchive::FileDesc::FileType::GOWR_Skinned_Mesh_Buff && (wad._fileEntries[j].nameStr().find(name) != std::string::npos))
+                if (wad._fileEntries[j].type == WADArchive::FileType::GOWR_MG_GPU_BUFF && (wad._fileEntries[j].nameStr().find(name) != std::string::npos))
                 {
                     if (std::find(usedMeshBufferIndices.begin(), usedMeshBufferIndices.end(), j) != usedMeshBufferIndices.end())
                         continue;
@@ -608,7 +611,7 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
             }
             for (int j = 0; j < wad._header.fileCount; j++)
             {
-                if (wad._fileEntries[j].type == WADArchive::FileDesc::FileType::GOWR_MG_DEFN && (wad._fileEntries[j].nameStr().find(name) != std::string::npos))
+                if (wad._fileEntries[j].type == WADArchive::FileType::GOWR_MG_DEFN && (wad._fileEntries[j].nameStr().find(name) != std::string::npos))
                 {
                     if (std::find(usedMgDefIndices.begin(), usedMgDefIndices.end(), j) != usedMgDefIndices.end())
                         continue;
@@ -622,7 +625,7 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
 
             for (int j = 0; j < wad._header.fileCount; j++)
             {
-                if (wad._fileEntries[j].type == WADArchive::FileDesc::FileType::GOWR_GOPROTO_DEFN && (wad._fileEntries[j].nameStr().find("Proto") != std::string::npos))
+                if (wad._fileEntries[j].type == WADArchive::FileType::GOWR_GOPROTO_RIG && (wad._fileEntries[j].nameStr().find("Proto") != std::string::npos))
                 {
                     std::string sample = Utils::str_tolower(wad._fileEntries[j].nameStr().substr(7, wad._fileEntries[j].nameStr().length() - 7));
                     if (sample == name.substr(0,name.length() - 2))
@@ -668,6 +671,16 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
                     if (buffer.tellp() != std::streampos(0))
                     {
                         meshes.push_back(containRawMesh(meshInfos[j], buffer, subname));
+                    }
+                }
+            }
+            for (auto& mesh : meshes)
+            {
+                for (auto& vert : mesh.Joints)
+                {
+                    for (auto& x : vert)
+                    {
+                        x = std::clamp<uint16_t>(x,0, rig.boneCount - 1);
                     }
                 }
             }
@@ -761,6 +774,60 @@ CommandLine Init()
 }
 int main(int argc, char* argv[])
 {
+    //directory_iterator dir(R"(D:\gowr\Image0\exec\wad\orbis_le)");
+
+    //int cnt = 0;
+    //for (auto& itr : dir)
+    //{
+    //    if (itr.path().extension().string() == ".wad")
+    //    {
+    //        WADArchive wad;
+    //        shared_ptr<fstream> fsptr = make_shared<fstream>(itr.path(), std::ios::binary | std::ios::in);
+    //        if (wad.Read(fsptr) && wad.Test())
+    //        {
+    //            for (int i = 0; i < wad._header.fileCount; i++)
+    //            {
+    //                if (wad._fileEntries[i].type == WADArchive::FileType::GOWR_MESH_DEFN && wad._fileEntries[i].nameStr().substr(0, 4) == "MESH")
+    //                {
+    //                    std::stringstream meshDefStream;
+    //                    wad.GetFile(i, meshDefStream);
+
+    //                    vector<MeshInfo> meshInfos;
+    //                    meshDefStream.seekg(0, ios::end);
+    //                    if (!GOWR::MESH::Parse(meshDefStream, meshInfos, meshDefStream.tellg()))
+    //                    {
+    //                        cout << "\n";
+    //                    }
+    //                }
+    //            }
+    //        }
+    //        else
+    //        {
+    //            cnt++;
+    //            cout << itr.path().string();
+    //            cout << "\n";
+    //        }
+    //    }
+    //}
+
+
+    //for (auto itr = compMap.begin(); itr != compMap.end(); itr++)
+    //{
+    //    cout << "Primitive: " << int(itr->first);
+    //    cout << " DataTypes:";
+    //    for (auto itr1 = itr->second.begin(); itr1 != itr->second.end(); itr1++)
+    //    {
+    //        cout << " " << int(itr1->first) << " " << itr1->second;
+    //    }
+    //    cout << "\n";
+    //}
+    //cout << "================\n";
+    //cout << " DataTypes:";
+    //for (auto itr = dataSet.begin(); itr != dataSet.end(); itr++)
+    //{
+    //    cout << " " << int(*itr);
+    //}
+    //return 0;
 
     CHAR charbuffer[260] = { 0 };
     GetCurrentDirectoryA(sizeof(charbuffer), charbuffer);

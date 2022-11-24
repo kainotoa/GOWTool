@@ -72,7 +72,39 @@ bool WADArchive::Test()
                 }
             }
         }
+        if (_fileEntries[i].type == WADArchive::FileType::GOWR_MESH_DEFN && _fileEntries[i].nameStr().rfind("MESH_", 0) == 0)
+        {
+            stream->seekg(_fileAbsOffsets[i]);
+            uint32_t temp = 0;
+            stream->read((char*)&temp, sizeof uint32_t);
+            if (temp != 655372)
+            {
+                return false;
+            }
+        }
+        if (_fileEntries[i].type == WADArchive::FileType::GOWR_MESH_DEFN && _fileEntries[i].nameStr().rfind("MG_", 0) == 0)
+        {
+            stream->seekg(_fileAbsOffsets[i]);
+            uint32_t temp = 0;
+            stream->read((char*)&temp, sizeof uint32_t);
+            if (temp != 65548)
+            {
+                return false;
+            }
+        }
+        // fails on file 59 in r_system.wad rest should pass
+        if (_fileEntries[i].type == WADArchive::FileType::GOWR_SHADER)
+        {
+            stream->seekg(_fileAbsOffsets[i] + _fileEntries[i].size - 28);
+            char arr[8] { 0 };
+            stream->read((char*)&arr, 7);
+            if (string(arr) != "OrbShdr")
+            {
+                return false;
+            }
+        }
     }
+
     return true;
 }
 bool WADArchive::Read(std::shared_ptr<std::iostream> instream)

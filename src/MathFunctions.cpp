@@ -160,7 +160,7 @@ float Quat::getreal(void)
 		return (sqrt(1.f - m));
 }
 #pragma warning(disable:4244)
-Vec4 TenBitShifted(const uint32_t& U32)
+Vec4 R10G10B10A2_SNORM_TO_VEC4(const uint32_t& U32)
 {
 	float X = (U32 & 1023);
 	float Y = ((U32 >> 10) & 1023);
@@ -170,7 +170,7 @@ Vec4 TenBitShifted(const uint32_t& U32)
 	Vec4 v(((X - 511) / 512.f), ((Y - 511) / 512.f), ((Z - 511) / 512.f), W / 3.f);
 	return v;
 }
-Vec4 TenBitUnsigned(const uint32_t& U32)
+Vec4 R10G10B10A2_UNORM_TO_VEC4(const uint32_t& U32)
 {
 	float X = (U32 & 1023);
 	float Y = ((U32 >> 10) & 1023);
@@ -180,7 +180,7 @@ Vec4 TenBitUnsigned(const uint32_t& U32)
 	Vec4 v((X / 1023.f), (Y / 1023.f), (Z / 1023.f), W / 3.f);
 	return v;
 }
-uint32_t UnTenBitShifted(const Vec4& vec)
+uint32_t VEC4_TO_R10G10B10A2_SNORM(const Vec4& vec)
 {
 	float x = std::clamp<float>(vec.X, -1.f, +1.f);
 	float y = std::clamp<float>(vec.Y, -1.f, +1.f);
@@ -200,7 +200,7 @@ uint32_t UnTenBitShifted(const Vec4& vec)
 
 	return packed;
 }
-uint32_t UnTenBitUnsigned(const Vec4& vec)
+uint32_t VEC4_TO_R10G10B10A2_UNORM(const Vec4& vec)
 {
 	float x = std::clamp<float>(vec.X, 0, +1.f);
 	float y = std::clamp<float>(vec.Y, 0, +1.f);
@@ -222,5 +222,14 @@ uint32_t UnTenBitUnsigned(const Vec4& vec)
 	uint32_t packed = 0U | a | b | c;
 
 	return packed;
+}
+Vec4 R10G11B11_UNORM_TO_VEC4(const uint32_t& U32)
+{
+	float X = (U32 & 2047);
+	float Y = ((U32 >> 11) & 2047);
+	float Z = ((U32 >> 22) & 1023); 
+
+	Vec4 v((X / 2047.f), (Y / 2047.f), (Z / 1023), 0.f);
+	return v;
 }
 #pragma warning(default:4244)

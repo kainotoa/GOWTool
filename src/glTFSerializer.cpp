@@ -60,7 +60,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
     // Create a BufferView with a target of ELEMENT_ARRAY_BUFFER (as it will reference index
     // data) - it will be the 'current' BufferView that all the Accessors created by this
     // BufferBuilder will automatically reference
-    if (expMesh.indices != nullptr)
+    if (expMesh.Indices.size() > 0)
     {
         bufferBuilder.AddBufferView(BufferViewTarget::ELEMENT_ARRAY_BUFFER);
 
@@ -69,15 +69,15 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
 
         for (uint32_t i = 0; i < expMesh.IndCount; i += 3)
         {
-            indices.push_back(expMesh.indices[i + 1]);
-            indices.push_back(expMesh.indices[i]);
-            indices.push_back(expMesh.indices[i + 2]);
+            indices.push_back(expMesh.Indices[i + 1]);
+            indices.push_back(expMesh.Indices[i]);
+            indices.push_back(expMesh.Indices[i + 2]);
         }
         // Copy the Accessor's id - subsequent calls to AddAccessor may invalidate the returned reference
         meshPrimitive.indicesAccessorId = bufferBuilder.AddAccessor(indices, { TYPE_SCALAR, COMPONENT_UNSIGNED_INT }).id;
     }
     
-    if (expMesh.vertices != nullptr)
+    if (expMesh.Positions.size() > 0)
     {
         // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
         bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
@@ -85,9 +85,9 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
         std::vector<float> positions;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
         {
-            positions.push_back(expMesh.vertices[i].X);
-            positions.push_back(expMesh.vertices[i].Y);
-            positions.push_back(expMesh.vertices[i].Z);
+            positions.push_back(expMesh.Positions[i].X);
+            positions.push_back(expMesh.Positions[i].Y);
+            positions.push_back(expMesh.Positions[i].Z);
         }
 
         std::vector<float> minValues(3U, std::numeric_limits<float>::max());
@@ -105,7 +105,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
         meshPrimitive.attributes[ACCESSOR_POSITION] = bufferBuilder.AddAccessor(positions, { TYPE_VEC3, COMPONENT_FLOAT, false, std::move(minValues), std::move(maxValues) }).id;
     }
 
-    if (expMesh.normals != nullptr)
+    if (expMesh.Normals.size() > 0)
     {
         // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
         bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
@@ -113,14 +113,14 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
         std::vector<float> normals;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
         {
-            normals.push_back(expMesh.normals[i].X);
-            normals.push_back(expMesh.normals[i].Y);
-            normals.push_back(expMesh.normals[i].Z);
+            normals.push_back(expMesh.Normals[i].X);
+            normals.push_back(expMesh.Normals[i].Y);
+            normals.push_back(expMesh.Normals[i].Z);
         }
         meshPrimitive.attributes[ACCESSOR_NORMAL] = bufferBuilder.AddAccessor(normals, { TYPE_VEC3, COMPONENT_FLOAT }).id;
     }
 
-    if (expMesh.tangents != nullptr)
+    if (expMesh.Tangents.size() > 0)
     {
         // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
         bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
@@ -128,81 +128,163 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
         std::vector<float> tangents;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
         {
-            tangents.push_back(expMesh.tangents[i].X);
-            tangents.push_back(expMesh.tangents[i].Y);
-            tangents.push_back(expMesh.tangents[i].Z);
-            tangents.push_back(expMesh.tangents[i].W);
+            tangents.push_back(expMesh.Tangents[i].X);
+            tangents.push_back(expMesh.Tangents[i].Y);
+            tangents.push_back(expMesh.Tangents[i].Z);
+            tangents.push_back(expMesh.Tangents[i].W);
         }
         meshPrimitive.attributes[ACCESSOR_TANGENT] = bufferBuilder.AddAccessor(tangents, { TYPE_VEC4, COMPONENT_FLOAT }).id;
     }
 
 
-    if (expMesh.txcoord0 != nullptr)
+    if (expMesh.TexCoord0.size() > 0)
     {
         // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
         bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
         std::vector<float> texcoords0;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
         {
-            texcoords0.push_back(expMesh.txcoord0[i].X);
-            texcoords0.push_back(expMesh.txcoord0[i].Y);
+            texcoords0.push_back(expMesh.TexCoord0[i].X);
+            texcoords0.push_back(expMesh.TexCoord0[i].Y);
         }
         meshPrimitive.attributes[ACCESSOR_TEXCOORD_0] = bufferBuilder.AddAccessor(texcoords0, { TYPE_VEC2, COMPONENT_FLOAT }).id;
     }
 
-    if (expMesh.txcoord1 != nullptr)
+    if (expMesh.TexCoord1.size() > 0)
     {
         // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
         bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
         std::vector<float> texcoords1;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
         {
-            texcoords1.push_back(expMesh.txcoord1[i].X);
-            texcoords1.push_back(expMesh.txcoord1[i].Y);
+            texcoords1.push_back(expMesh.TexCoord1[i].X);
+            texcoords1.push_back(expMesh.TexCoord1[i].Y);
         }
         meshPrimitive.attributes[ACCESSOR_TEXCOORD_1] = bufferBuilder.AddAccessor(texcoords1, { TYPE_VEC2, COMPONENT_FLOAT }).id;
     }
 
-    if (expMesh.txcoord2 != nullptr)
+    if (expMesh.TexCoord2.size() > 0)
     {
         // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
         bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
         std::vector<float> texcoords2;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
         {
-            texcoords2.push_back(expMesh.txcoord2[i].X);
-            texcoords2.push_back(expMesh.txcoord2[i].Y);
+            texcoords2.push_back(expMesh.TexCoord2[i].X);
+            texcoords2.push_back(expMesh.TexCoord2[i].Y);
         }
         meshPrimitive.attributes["TEXCOORD_2"] = bufferBuilder.AddAccessor(texcoords2, { TYPE_VEC2, COMPONENT_FLOAT }).id;
     }
-
-    if (expMesh.joints != nullptr)
+    
+    if (expMesh.TexCoord3.size() > 0)
+    {
+        // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
+        std::vector<float> texcoords3;
+        for (uint32_t i = 0; i < expMesh.VertCount; i++)
+        {
+            texcoords3.push_back(expMesh.TexCoord3[i].X);
+            texcoords3.push_back(expMesh.TexCoord3[i].Y);
+        }
+        meshPrimitive.attributes["TEXCOORD_3"] = bufferBuilder.AddAccessor(texcoords3, { TYPE_VEC2, COMPONENT_FLOAT }).id;
+    }
+    
+    if (expMesh.Joints.size() > 0)
     {
         // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
         bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
         std::vector<uint16_t> joints0;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
         {
-            joints0.push_back(expMesh.joints[i][0]);
-            joints0.push_back(expMesh.joints[i][1]);
-            joints0.push_back(expMesh.joints[i][2]);
-            joints0.push_back(expMesh.joints[i][3]);
+            joints0.push_back(expMesh.Joints[i][0]);
+            joints0.push_back(expMesh.Joints[i][1]);
+            joints0.push_back(expMesh.Joints[i][2]);
+            joints0.push_back(expMesh.Joints[i][3]);
         }
         meshPrimitive.attributes[ACCESSOR_JOINTS_0] = bufferBuilder.AddAccessor(joints0, { TYPE_VEC4, COMPONENT_UNSIGNED_SHORT }).id;
+
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
+        std::vector<uint16_t> joints1;
+        for (uint32_t i = 0; i < expMesh.VertCount; i++)
+        {
+            joints1.push_back(expMesh.Joints[i][4]);
+            joints1.push_back(expMesh.Joints[i][5]);
+            joints1.push_back(expMesh.Joints[i][6]);
+            joints1.push_back(expMesh.Joints[i][7]);
+        }
+        meshPrimitive.attributes["JOINTS_1"] = bufferBuilder.AddAccessor(joints1, {TYPE_VEC4, COMPONENT_UNSIGNED_SHORT}).id;
+
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
+        std::vector<uint16_t> joints2;
+        for (uint32_t i = 0; i < expMesh.VertCount; i++)
+        {
+            joints2.push_back(expMesh.Joints[i][8]);
+            joints2.push_back(expMesh.Joints[i][9]);
+            joints2.push_back(expMesh.Joints[i][10]);
+            joints2.push_back(expMesh.Joints[i][11]);
+        }
+        meshPrimitive.attributes["JOINTS_2"] = bufferBuilder.AddAccessor(joints2, { TYPE_VEC4, COMPONENT_UNSIGNED_SHORT }).id;
+
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
+        std::vector<uint16_t> joints3;
+        for (uint32_t i = 0; i < expMesh.VertCount; i++)
+        {
+            joints3.push_back(expMesh.Joints[i][12]);
+            joints3.push_back(expMesh.Joints[i][13]);
+            joints3.push_back(expMesh.Joints[i][14]);
+            joints3.push_back(expMesh.Joints[i][15]);
+        }
+        meshPrimitive.attributes["JOINTS_3"] = bufferBuilder.AddAccessor(joints3, { TYPE_VEC4, COMPONENT_UNSIGNED_SHORT }).id;
     }
-    if (expMesh.weights != nullptr)
+    if (expMesh.Weights.size() > 0)
     {
         // Create a BufferView with target ARRAY_BUFFER (as it will reference vertex attribute data)
         bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
         std::vector<float> weights0;
         for (uint32_t i = 0; i < expMesh.VertCount; i++)
         {
-            weights0.push_back(expMesh.weights[i][0]);
-            weights0.push_back(expMesh.weights[i][1]);
-            weights0.push_back(expMesh.weights[i][2]);
-            weights0.push_back(expMesh.weights[i][3]);
+            weights0.push_back(expMesh.Weights[i][0]);
+            weights0.push_back(expMesh.Weights[i][1]);
+            weights0.push_back(expMesh.Weights[i][2]);
+            weights0.push_back(expMesh.Weights[i][3]);
         }
         meshPrimitive.attributes[ACCESSOR_WEIGHTS_0] = bufferBuilder.AddAccessor(weights0, { TYPE_VEC4, COMPONENT_FLOAT }).id;
+
+
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
+        std::vector<float> weights1;
+        for (uint32_t i = 0; i < expMesh.VertCount; i++)
+        {
+            weights1.push_back(expMesh.Weights[i][4]);
+            weights1.push_back(expMesh.Weights[i][5]);
+            weights1.push_back(expMesh.Weights[i][6]);
+            weights1.push_back(expMesh.Weights[i][7]);
+        }
+        meshPrimitive.attributes["WEIGHTS_1"] = bufferBuilder.AddAccessor(weights1, {TYPE_VEC4, COMPONENT_FLOAT}).id;
+
+
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
+        std::vector<float> weights2;
+        for (uint32_t i = 0; i < expMesh.VertCount; i++)
+        {
+            weights2.push_back(expMesh.Weights[i][8]);
+            weights2.push_back(expMesh.Weights[i][9]);
+            weights2.push_back(expMesh.Weights[i][10]);
+            weights2.push_back(expMesh.Weights[i][11]);
+        }
+        meshPrimitive.attributes["WEIGHTS_2"] = bufferBuilder.AddAccessor(weights2, { TYPE_VEC4, COMPONENT_FLOAT }).id;
+
+
+        bufferBuilder.AddBufferView(BufferViewTarget::ARRAY_BUFFER);
+        std::vector<float> weights3;
+        for (uint32_t i = 0; i < expMesh.VertCount; i++)
+        {
+            weights3.push_back(expMesh.Weights[i][12]);
+            weights3.push_back(expMesh.Weights[i][13]);
+            weights3.push_back(expMesh.Weights[i][14]);
+            weights3.push_back(expMesh.Weights[i][15]);
+        }
+        meshPrimitive.attributes["WEIGHTS_3"] = bufferBuilder.AddAccessor(weights3, { TYPE_VEC4, COMPONENT_FLOAT }).id;
     }
 
     // Create a very simple glTF Document with the following hierarchy:
@@ -234,7 +316,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
 
     // Construct a Mesh and add the MeshPrimitive as a child
     Mesh mesh;
-    mesh.name = expMesh.name;
+    mesh.name = expMesh.Name;
     mesh.primitives.push_back(std::move(meshPrimitive));
     // Add it to the Document and store the generated ID
     auto meshId = document.meshes.Append(std::move(mesh), AppendIdPolicy::GenerateOnEmpty).id;
@@ -242,7 +324,7 @@ auto AddMesh(Document& document, BufferBuilder& bufferBuilder, const RawMeshCont
     // Construct a Node adding a reference to the Mesh
     Node node;
     node.meshId = meshId;
-    node.name = expMesh.name;
+    node.name = expMesh.Name;
     if(Skinned)
     node.skinId = document.skins.Front().id;
     // Add it to the Document and store the generated ID

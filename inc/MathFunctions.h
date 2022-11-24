@@ -69,7 +69,8 @@ struct Quat
 	Quat(const float& x, const float& y, const float& z, const float& w);
 	float getreal(void);
 };
-Vec4 TenBitShifted(const uint32_t& U32);
-Vec4 TenBitUnsigned(const uint32_t& U32);
-uint32_t UnTenBitShifted(const Vec4& vec);
-uint32_t UnTenBitUnsigned(const Vec4& vec);
+Vec4 R10G10B10A2_SNORM_TO_VEC4(const uint32_t& U32);
+Vec4 R10G10B10A2_UNORM_TO_VEC4(const uint32_t& U32);
+uint32_t VEC4_TO_R10G10B10A2_SNORM(const Vec4& vec);
+uint32_t VEC4_TO_R10G10B10A2_UNORM(const Vec4& vec);
+Vec4 R10G11B11_UNORM_TO_VEC4(const uint32_t& U32);

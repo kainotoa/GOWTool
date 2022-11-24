@@ -5,18 +5,27 @@
 struct RawMeshContainer
 {
 	uint32_t VertCount{ 0 }, IndCount{ 0 };
-	Vec3* vertices{ nullptr };
-	Vec3* normals{ nullptr };
-	Vec4* tangents{ nullptr };
-	Vec2* txcoord0{ nullptr };
-	Vec2* txcoord1{ nullptr };
-	Vec2* txcoord2{ nullptr };
-	uint32_t* indices{ nullptr };
-	uint16_t** joints{ nullptr };
-	float** weights{ nullptr };
-	std::string name;
+	
+	vector<Vec3> Positions;
+	vector<Vec3> Normals;
+	vector<Vec4> Tangents;
+	
+	vector<Vec2> TexCoord0;
+	vector<Vec2> TexCoord1;
+	vector<Vec2> TexCoord2;
+	vector<Vec2> TexCoord3;
+	
+	vector<vector<uint16_t>> Joints;
+	vector<vector<float>> Weights;
+	
+	vector<uint32_t> Indices;
+	
+	std::string Name;
+	
 	RawMeshContainer() = default;
 };
+
+// Range [0,17]
 enum class PrimitiveTypes : uint8_t
 {
 	POSITION,
@@ -25,28 +34,22 @@ enum class PrimitiveTypes : uint8_t
 	TEXCOORD_0,
 	TEXCOORD_1,
 	TEXCOORD_2,
-	UNKNOWN0,
-	UNKNOWN1,
-	UNKNOWN2,
+	TEXCOORD_3,
 	JOINTS0 = 9,
-	WEIGHTS0,
-	UNKNOWN3,
-	UNKNOWN4,
-	UNKNOWN5,
-	UNKNOWN6,
-	UNKNOWN7
+	WEIGHTS0
 };
-
+// Range [0,10] - { 5, 9 }
 enum class DataTypes : uint8_t
 {
-	FLOAT,
-	HALFWORD_STRUCT_0,
-	WORD_STRUCT_0,
-	WORD_STRUCT_1,        // TEN TEN TEN 2 Normalized maybe? but sometimes its unsigned 1023 normalized (for weights) other times signed -511 shift 512 normalized 1's or 2's compliment maybe
-	HALFWORD_STRUCT_1,   // USHORT un normalized maybe
-	UNSIGNED_SHORT = 6,	// USHORT normalized
-	HALFWORD_STRUCT_2,  //USHORT half normalized or compliment bs maybe
-	BYTE_STRUCT_0		//UBYTE_UNORM
+	R32_FLOAT,
+	R16_UNKNOWN, //Test Bits and use
+	R32_UNKNOWN, //Test Use
+	R10G10B10A2_TYPELESS, // Used as R10G10B10A2_UNORM [0, 1] and R10G10B10A2_SNORM [-1, 1]
+	R16_UINT,
+	R16_UNORM = 6,
+	R16_SNORM,
+	R8_UINT,
+	R8_UNKNOWN = 10 //Test Bits and use
 };
 
 struct alignas (8) Component
@@ -77,7 +80,7 @@ struct MeshInfo
 	
 	uint16_t LODlvl{ 0 };
 	
-	uint16_t boneAssociated{ 0 };
+	uint16_t parentBone{ 0 };
 	
 	string name;
 

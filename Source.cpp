@@ -747,37 +747,6 @@ void PrintHelp()
 
 int main(int argc, char* argv[])
 {
-    //ImportModels(std::filesystem::path(R"(C:\Users\abhin\OneDrive\Desktop\New folder (6))"), std::filesystem::path(R"(C:\Users\abhin\OneDrive\Desktop\r_baldur00.wad)"));
-
-
-    //directory_iterator dir(R"(D:\SteamLibrary\steamapps\common\GodOfWar\exec\wad\pc_le)");
-
-    //int cnt = 0;
-    //for (auto& itr : dir)
-    //{
-    //    if (itr.path().extension().string() == ".wad")
-    //    {
-    //        WadFile wad;
-    //        wad.Read(itr.path());
-
-    //        for (int i = 0; i < wad._FileEntries.size(); i++)
-    //        {
-    //            if (wad._FileEntries[i].type == WadFile::FileType::SkinnedMeshDef)
-    //            {
-    //                std::string name = wad._FileEntries[i].name.substr(3, wad._FileEntries[i].name.length() - 5);
-    //                std::stringstream meshDefStream;
-    //                wad.GetBuffer(i, meshDefStream);
-
-    //                MGDefinition meshDef;
-    //                auto meshInfos = meshDef.ReadMG(meshDefStream);
-    //            }
-    //        }
-    //    }
-    //}
-
-
-    return 0;
-
     if (argc < 2)
     {
         Utils::Logger::Error("Required argument was not provided.\n");

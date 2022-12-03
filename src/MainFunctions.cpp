@@ -3,6 +3,7 @@
 #include "MathFunctions.h"
 #include "../inc/Mesh.h"
 #include "../inc/Formats.h"
+#include <bit>
 
 RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::iostream& file,std::string name, uint64_t off)
 {
@@ -205,41 +206,67 @@ RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::iostream& file,std::str
             }
             else if (comp.dataType == DataTypes::R32_UNKNOWN)
             {
-                cout << "";
-
                 for (uint32_t v = 0; v < meshinfo.vertCount; v++)
                 {
                     file.seekg(comp.offset + meshinfo.bufferOffset[comp.bufferIndex] + meshinfo.bufferStride[comp.bufferIndex] * v + off);
 
-                    uint32_t residual = 0;
-                    uint8_t cnt1 = 1;
-                    uint8_t cnt2 = 0;
-                    uint32_t mask = 1023;
-
-                    for (uint8_t s = 0; s < comp.elementCount; s++)
+                    if (meshinfo.R32_UNK_Usage == 1)
                     {
-                        uint64_t R1G11B11 = 0;
-                        file.read((char*)&R1G11B11, sizeof(uint32_t));
+                        for (uint8_t s = 0; s < comp.elementCount; s++)
+                        {
+                            uint16_t X = 0;
+                            uint16_t Y = 0;
+                            file.read((char*)&X, sizeof X);
+                            file.read((char*)&Y, sizeof Y);
 
-                        uint16_t X = (R1G11B11 & mask);
-                        X <<= cnt2;
-                        X |= residual;
-                        X <<= (cnt1 - cnt2);
-
-                        cnt1++;
-                        cnt2 = s;
-                        mask >>= 1;
-
-                        uint16_t Y = ((R1G11B11 >> (10 - s)) & 2047);
-                        uint16_t Z = ((R1G11B11 >> (21 - s)) & 2047);
-
-                        residual = (R1G11B11 >> (32 - s));
-
-                        Mesh.Joints[v][0 + s * 3] = X;
-                        Mesh.Joints[v][1 + s * 3] = Y;
-                        Mesh.Joints[v][2 + s * 3] = Z;
-
+                            Mesh.Joints[v][0 + s * 2] = X;
+                            Mesh.Joints[v][1 + s * 2] = Y;
+                        }
                     }
+                    else if (meshinfo.R32_UNK_Usage == 2)
+                    {
+                        //uint32_t residual = 0;
+                        //uint8_t cnt1 = 1;
+                        //uint8_t cnt2 = 0;
+                        //uint32_t mask = 1023;
+
+                        //for (uint8_t s = 0; s < comp.elementCount - 1; s++)
+                        //{
+                        //    uint64_t R1G11B11 = 0;
+                        //    file.read((char*)&R1G11B11, sizeof(uint32_t));
+
+                        //    uint16_t X = (R1G11B11 & mask);
+                        //    //X <<= cnt2;
+                        //    //X |= residual;
+                        //    //X <<= (cnt1 - cnt2);
+
+                        //    //cnt1++;
+                        //    //cnt2 = s;
+                        //    //mask >>= 1;
+
+
+                        //    uint16_t Y = ((R1G11B11 >> (10 - s)) & 2047);
+                        //    uint16_t Z = ((R1G11B11 >> (21 - s)) & 2047);
+
+                        //    residual = (R1G11B11 >> (32 - s));
+
+                        //    X <<= s;
+                        //    X <<= 1;
+                        //    X |= residual;
+
+                        //    //uint16_t Y = ((R1G11B11 >> (10 - s)) & 2047);
+                        //    //uint16_t Z = ((R1G11B11 >> (21 - s)) & 2047);
+
+                        //    //uint32_t test = std::rotr(R1G11B11, 10 - s);
+                        //    //R1G11B11 <<= (s + 1);
+                        //    //uint16_t X = R1G11B11 & 2047;
+
+                        //    Mesh.Joints[v][0 + s * 3] = Z;
+                        //    Mesh.Joints[v][1 + s * 3] = Y;
+                        //    Mesh.Joints[v][2 + s * 3] = X;
+                        //}
+                    }
+                    else throw std::exception("Invalid R32_Usage For Joint's Data Type: " + int(comp.dataType));
                 }
             }
             else throw std::exception("Joint Invalid Data Type: " + int(comp.dataType));
@@ -284,9 +311,8 @@ RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::iostream& file,std::str
             }
             else if (comp.dataType == DataTypes::R32_UNKNOWN)
             {
-                cout << "";
-                uint32_t R10G10B10A2;
 
+                uint32_t R10G10B10A2;
                 for (uint32_t v = 0; v < meshinfo.vertCount; v++)
                 {
                     file.seekg(comp.offset + meshinfo.bufferOffset[comp.bufferIndex] + meshinfo.bufferStride[comp.bufferIndex] * v + off);
@@ -300,26 +326,20 @@ RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::iostream& file,std::str
                         vec = R10G10B10A2_UNORM_TO_VEC4(R10G10B10A2);
 
 
-                        Mesh.Weights[v][0 + s * 4] = vec.X;
-                        Mesh.Weights[v][1 + s * 4] = vec.Y;
-                        Mesh.Weights[v][2 + s * 4] = vec.Z;
-                        Mesh.Weights[v][3 + s * 4] = vec.W;
+                        Mesh.Weights[v][0 + s * 3] = vec.X;
+                        Mesh.Weights[v][1 + s * 3] = vec.Y;
+                        Mesh.Weights[v][2 + s * 3] = vec.Z;
 
-                        sum += vec.X + vec.Y + vec.Z + vec.W;
-                    }
-                    if (sum < 0.98 || sum > 1.02)
-                    {
-                        cout << "";
+                        sum += vec.X + vec.Y + vec.Z;
                     }
 
                     float NorRatio = 1.f / sum;
 
                     for (uint8_t s = 0; s < comp.elementCount; s++)
                     {
-                        Mesh.Weights[v][0 + s * 4] *= NorRatio;
-                        Mesh.Weights[v][1 + s * 4] *= NorRatio;
-                        Mesh.Weights[v][2 + s * 4] *= NorRatio;
-                        Mesh.Weights[v][3 + s * 4] *= NorRatio;
+                        Mesh.Weights[v][0 + s * 3] *= NorRatio;
+                        Mesh.Weights[v][1 + s * 3] *= NorRatio;
+                        Mesh.Weights[v][2 + s * 3] *= NorRatio;
                     }
                 }
             }

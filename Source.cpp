@@ -223,336 +223,336 @@ extern std::set<DataTypes> dataSet;
 //    }
 //    return true;
 //}
-//bool ImportAllGnf(const std::filesystem::path& gnfSrcDir, vector<Texpack*>& texpacks, const std::filesystem::path& gamedir)
-//{
-//    if (gnfSrcDir.empty() || !gnfSrcDir.is_absolute() || !std::filesystem::exists(gnfSrcDir) || !std::filesystem::is_directory(gnfSrcDir))
-//    {
-//        return false;
-//    }
-//
-//    std::vector<Gnf::GnfImage*> gnfImages;
-//    std::vector<uint64_t> gnfHashes;
-//    std::filesystem::directory_iterator dir(gnfSrcDir);
-//    for (const std::filesystem::directory_entry& entry : dir)
-//    {
-//        Gnf::GnfImage* gnfImage = new Gnf::GnfImage();
-//        if (Utils::str_tolower(entry.path().extension().string()) == ".gnf")
-//        {
-//            std::ifstream ifs(entry.path().string(), std::ios::binary | std::ios::in);
-//            ifs.seekg(0x0, std::ios::end);
-//            size_t size = ifs.tellg();
-//            ifs.seekg(0x0, std::ios::beg);
-//
-//            if (size < 0x200)
-//            {
-//                continue;
-//                ifs.close();
-//            }
-//
-//            uint32_t magic;
-//            ifs.read((char*)&magic, sizeof(uint32_t));
-//            if (magic != gnfImage->header.gnfMagic)
-//            {
-//                continue;
-//                ifs.close();
-//            }
-//
-//            ifs.seekg(0x0, std::ios::beg);
-//
-//            byte* bytes = new byte[size];
-//            ifs.read((char*)bytes, size);
-//            ifs.close();
-//
-//            try
-//            {
-//                gnfImage->ReadImage(bytes);
-//            }
-//            catch (std::exception& ex)
-//            {
-//                continue;
-//            }
-//
-//            gnfImages.push_back(gnfImage);
-//            delete[] bytes;
-//        }
-//        else if (Utils::str_tolower(entry.path().extension().string()) == ".dds")
-//        {
-//            std::ifstream ifs(entry.path().string(), std::ios::binary | std::ios::in);
-//            ifs.seekg(0x0, std::ios::end);
-//            size_t size = ifs.tellg();
-//            ifs.seekg(0x0, std::ios::beg);
-//
-//            if (size < 0x95)
-//            {
-//                continue;
-//                ifs.close();
-//            }
-//
-//            uint32_t magic;
-//            ifs.read((char*)&magic, sizeof(uint32_t));
-//            
-//            if (magic != 0x20534444)
-//            {
-//                continue;
-//                ifs.close();
-//            }
-//            
-//            ifs.seekg(0x0, std::ios::beg);
-//
-//            byte* ddsbytes = new byte[size];
-//            ifs.read((char*)ddsbytes, size);
-//            ifs.close();
-//
-//            try
-//            {
-//                byte* bytes = nullptr;
-//                size = ConvertDDSToGnf(ddsbytes, size, bytes);
-//                gnfImage->ReadImage(bytes);
-//
-//                delete[] bytes;
-//            }
-//            catch (const std::exception& ex)
-//            {
-//                continue;
-//            }
-//
-//            gnfImages.push_back(gnfImage);
-//            delete[] ddsbytes;
-//        }
-//        else
-//            continue;
-//
-//        try
-//        {
-//            std::stringstream s;
-//            std::string str = entry.path().filename().stem().string();
-//            if (str.find("TX_") != std::string::npos)
-//            {
-//                str = str.substr(str.find_last_of("_") + 1, 16);
-//                if (str.length() < 16)
-//                    continue;
-//                s << std::hex << str;
-//            }
-//            else
-//            {
-//                s << str;
-//            }
-//            uint64_t hash = 0;
-//            s >> hash;
-//
-//            gnfHashes.push_back(hash);
-//        }
-//        catch (const std::exception& ex)
-//        {
-//            continue;
-//        }
-//    }
-//
-//    if (gnfImages.size() < 1)
-//        return false;
-//
-//    if (gnfImages.size() != gnfHashes.size())
-//        return false;
-//
-//    {
-//        std::filesystem::recursive_directory_iterator dir1(gamedir);
-//        for (const std::filesystem::directory_entry& entry : dir1)
-//        {
-//            if (entry.path().extension().string() == ".wad")
-//            {
-//                WadFile wad;
-//                wad.Read(entry.path());
-//                for (int i = 0; i < wad._FileEntries.size(); i++)
-//                {
-//                    if ((int)wad._FileEntries[i].type == 32801)
-//                    {
-//                        std::stringstream s;
-//                        std::string name = wad._FileEntries[i].name.substr(3);
-//                        s << std::hex << name.substr(name.find_last_of("_") + 1, 16);
-//                        uint64_t hash = 0;
-//                        s >> hash;
-//                        for (int j = 0; j < gnfHashes.size(); j++)
-//                        {
-//                            if (hash == gnfHashes[j])
-//                            {
-//                                size_t offptr = wad._FileEntries[i].offset;
-//                                offptr += 0x47;
-//                                byte byteptr = 0xE;
-//                                wad.fs.seekp(offptr, std::ios::beg);
-//
-//                                wad.fs.write((char*)&byteptr, sizeof byteptr);
-//
-//                                uint16_t maxRes = 8192;
-//
-//                                wad.fs.write((char*)&maxRes, sizeof maxRes);
-//                                wad.fs.write((char*)&maxRes, sizeof maxRes);
-//
-//                                wad.fs.seekp(0xA, std::ios::cur);
-//
-//                                switch (gnfImages[j]->header.format)
-//                                {
-//                                case Gnf::Format::FormatBC1:
-//                                case Gnf::Format::Format8:
-//                                case Gnf::Format::FormatBC4:
-//                                    byteptr = 0x3;
-//                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
-//                                    byteptr = 0xB;
-//                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
-//                                    byteptr = 0x2B;
-//                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
-//                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
-//                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
-//                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
-//                                    break;
-//                                case Gnf::Format::FormatBC2:
-//                                case Gnf::Format::FormatBC3:
-//                                case Gnf::Format::FormatBC7:
-//                                case Gnf::Format::FormatBC5:
-//                                case Gnf::Format::FormatBC6:
-//                                    byteptr = 0x6;
-//                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
-//                                    byteptr = 0x16;
-//                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
-//                                    byteptr = 0x56;
-//                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
-//                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
-//                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
-//                                    wad.fs.write((char*)&byteptr, sizeof byteptr);
-//                                    break;
-//                                default:
-//                                    throw std::exception("Format not implemented!");
-//                                    break;
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//                wad.fs.close();
-//            }
-//        }
-//    }
-//    std::filesystem::path outTexpackPath = gnfSrcDir.parent_path() / (gnfSrcDir.filename().string() + ".texpack");
-//    std::filesystem::path outTexpackTocPath = gnfSrcDir.parent_path() / (gnfSrcDir.filename().string() + ".texpack.toc");
-//
-//    std::ofstream ofs(outTexpackPath.string(), std::ios::binary | std::ios::out);
-//    std::ofstream ofs1(outTexpackTocPath.string(), std::ios::binary | std::ios::out);
-//
-//    for (size_t i = 0; i < 4; i++)
-//    {
-//        uint64_t z = 0x0ULL;
-//        ofs.write((char*)&z, sizeof(z));
-//        ofs1.write((char*)&z, sizeof(z));
-//    }
-//
-//    uint32_t _texSectionOff = (0x38 + gnfImages.size() * 0x18 + gnfImages.size() * 0x20 + 15) & (~15);
-//    uint32_t _blocksCount = gnfImages.size();
-//    uint32_t _blocksInfoOff = 0x38 + gnfImages.size() * 0x18;
-//    uint32_t _TexsCount = gnfImages.size();
-//
-//    ofs.write((char*)&_texSectionOff, sizeof(_texSectionOff));
-//    ofs.write((char*)&_blocksCount, sizeof(_blocksCount));
-//    ofs.write((char*)&_blocksInfoOff, sizeof(_blocksInfoOff));
-//    ofs.write((char*)&_TexsCount, sizeof(_TexsCount));
-//    uint64_t z = 0x5ULL;
-//    ofs.write((char*)&z, sizeof(z));
-//
-//    ofs1.write((char*)&_texSectionOff, sizeof(_texSectionOff));
-//    ofs1.write((char*)&_blocksCount, sizeof(_blocksCount));
-//    ofs1.write((char*)&_blocksInfoOff, sizeof(_blocksInfoOff));
-//    ofs1.write((char*)&_TexsCount, sizeof(_TexsCount));
-//    ofs1.write((char*)&z, sizeof(z));
-//
-//    Texpack::TexInfo* texInfos = new Texpack::TexInfo[_TexsCount];
-//    Texpack::BlockInfo* blockInfos = new Texpack::BlockInfo[_TexsCount];
-//
-//    size_t woff = _texSectionOff;
-//    for (size_t i = 0; i < _TexsCount; i++)
-//    {
-//        Gnf::GnfImage*& gnfImg = gnfImages[i];
-//
-//        for (size_t j = 0; j < texpacks.size(); j++)
-//        {
-//            if (texpacks[j]->GetUserHash(gnfHashes[i], gnfImg->header.userHash))
-//                break;
-//        }
-//        Texpack::TexInfo& texInfo = texInfos[i];
-//        texInfo._fileHash = gnfHashes[i];
-//        texInfo._userHash = gnfImg->header.userHash;
-//        texInfo._blockInfoOff = _blocksInfoOff + (i * 0x20);
-//
-//        Texpack::BlockInfo& blockInfo = blockInfos[i];
-//        blockInfo._blockOff = uint32_t(woff >> 4);
-//        blockInfo._rawSize = gnfImg->header.dataSize;
-//        blockInfo._blockSize = (gnfImg->header.fileSize + 0x24 + 15) & (~15);
-//        blockInfo._mipLvlStart = gnfImg->header.mipmaps;
-//        blockInfo._mipLvlEnd = 0;
-//        blockInfo._tocFileIdx = 0;
-//        blockInfo._mipWidth = gnfImg->header.width + 1;
-//        blockInfo._mipHeight = gnfImg->header.height + 1;
-//        blockInfo._nextSiblingBlockInfoOff = -1LL;
-//
-//        woff += blockInfo._blockSize;
-//    }
-//
-//    for (size_t i = 0; i < _TexsCount; i++)
-//    {
-//        Texpack::TexInfo& texInfo = texInfos[i];
-//
-//        ofs.write((char*)&texInfo, sizeof(texInfo));
-//        ofs1.write((char*)&texInfo, sizeof(texInfo));
-//    }
-//    for (size_t i = 0; i < _TexsCount; i++)
-//    {
-//        Texpack::BlockInfo& blockInfo = blockInfos[i];
-//
-//        ofs.write((char*)&blockInfo, sizeof(blockInfo));
-//        ofs1.write((char*)&blockInfo, sizeof(blockInfo));
-//    }
-//
-//    size_t curOff = ofs.tellp();
-//    for (size_t i = 0; i < _texSectionOff - curOff; i++)
-//    {
-//        byte zz = 0;
-//        ofs.write((char*)&zz, sizeof(zz));
-//        ofs1.write((char*)&zz, sizeof(zz));
-//    }
-//
-//    ofs1.close();
-//    for (size_t i = 0; i < _TexsCount; i++)
-//    {
-//        Gnf::GnfImage*& gnfImg = gnfImages[i];
-//        uint32_t zz = 0x1U;
-//        ofs.write((char*)&zz, sizeof(zz));
-//        zz = 0x124U;
-//        ofs.write((char*)&zz, sizeof(zz));
-//
-//        uint32_t blockSize = (gnfImg->header.fileSize + 0x24 + 15) & (~15);
-//        ofs.write((char*)&blockSize, sizeof(blockSize));
-//        zz = 0x5U;
-//        ofs.write((char*)&zz, sizeof(zz));
-//        ofs.write((char*)&gnfImg->header, sizeof(gnfImg->header));
-//
-//        uint64_t zzz = 0x3ULL;
-//        ofs.write((char*)&zzz, sizeof(zzz));
-//        uint16_t zzzz = uint16_t(gnfImg->header.mipmaps + 1);
-//        ofs.write((char*)&zzzz, sizeof(zzzz));
-//        ofs.write((char*)&zzzz, sizeof(zzzz));
-//        ofs.write((char*)&gnfImg->header.dataSize, sizeof(gnfImg->header.dataSize));
-//        zz = 0x2U;
-//        ofs.write((char*)&zz, sizeof(zz));
-//
-//        ofs.write((char*)gnfImg->imageData.get(), gnfImg->header.dataSize);
-//
-//        curOff = ofs.tellp();
-//        for (size_t j = 0; j < ((curOff + 15) & (~15)) - curOff; j++)
-//        {
-//            byte z = 0;
-//            ofs.write((char*)&z, sizeof(z));
-//        }
-//    }
-//    ofs.close();
-//    return true;
-//}
+bool ImportAllGnf(const std::filesystem::path& gnfSrcDir, vector<Texpack*>& texpacks, const std::filesystem::path& gamedir)
+{
+    if (gnfSrcDir.empty() || !gnfSrcDir.is_absolute() || !std::filesystem::exists(gnfSrcDir) || !std::filesystem::is_directory(gnfSrcDir))
+    {
+        return false;
+    }
+
+    std::vector<Gnf::GnfImage*> gnfImages;
+    std::vector<uint64_t> gnfHashes;
+    std::filesystem::directory_iterator dir(gnfSrcDir);
+    for (const std::filesystem::directory_entry& entry : dir)
+    {
+        Gnf::GnfImage* gnfImage = new Gnf::GnfImage();
+        if (Utils::str_tolower(entry.path().extension().string()) == ".gnf")
+        {
+            std::ifstream ifs(entry.path().string(), std::ios::binary | std::ios::in);
+            ifs.seekg(0x0, std::ios::end);
+            size_t size = ifs.tellg();
+            ifs.seekg(0x0, std::ios::beg);
+
+            if (size < 0x200)
+            {
+                continue;
+                ifs.close();
+            }
+
+            uint32_t magic;
+            ifs.read((char*)&magic, sizeof(uint32_t));
+            if (magic != gnfImage->header.gnfMagic)
+            {
+                continue;
+                ifs.close();
+            }
+
+            ifs.seekg(0x0, std::ios::beg);
+
+            byte* bytes = new byte[size];
+            ifs.read((char*)bytes, size);
+            ifs.close();
+
+            try
+            {
+                gnfImage->ReadImage(bytes);
+            }
+            catch (std::exception& ex)
+            {
+                continue;
+            }
+
+            gnfImages.push_back(gnfImage);
+            delete[] bytes;
+        }
+        else if (Utils::str_tolower(entry.path().extension().string()) == ".dds")
+        {
+            std::ifstream ifs(entry.path().string(), std::ios::binary | std::ios::in);
+            ifs.seekg(0x0, std::ios::end);
+            size_t size = ifs.tellg();
+            ifs.seekg(0x0, std::ios::beg);
+
+            if (size < 0x95)
+            {
+                continue;
+                ifs.close();
+            }
+
+            uint32_t magic;
+            ifs.read((char*)&magic, sizeof(uint32_t));
+            
+            if (magic != 0x20534444)
+            {
+                continue;
+                ifs.close();
+            }
+            
+            ifs.seekg(0x0, std::ios::beg);
+
+            byte* ddsbytes = new byte[size];
+            ifs.read((char*)ddsbytes, size);
+            ifs.close();
+
+            try
+            {
+                byte* bytes = nullptr;
+                size = ConvertDDSToGnf(ddsbytes, size, bytes);
+                gnfImage->ReadImage(bytes);
+
+                delete[] bytes;
+            }
+            catch (const std::exception& ex)
+            {
+                continue;
+            }
+
+            gnfImages.push_back(gnfImage);
+            delete[] ddsbytes;
+        }
+        else
+            continue;
+
+        try
+        {
+            std::stringstream s;
+            std::string str = entry.path().filename().stem().string();
+            if (str.find("TX_") != std::string::npos)
+            {
+                str = str.substr(str.find_last_of("_") + 1, 16);
+                if (str.length() < 16)
+                    continue;
+                s << std::hex << str;
+            }
+            else
+            {
+                s << str;
+            }
+            uint64_t hash = 0;
+            s >> hash;
+
+            gnfHashes.push_back(hash);
+        }
+        catch (const std::exception& ex)
+        {
+            continue;
+        }
+    }
+
+    if (gnfImages.size() < 1)
+        return false;
+
+    if (gnfImages.size() != gnfHashes.size())
+        return false;
+
+    {
+        //std::filesystem::recursive_directory_iterator dir1(gamedir);
+        //for (const std::filesystem::directory_entry& entry : dir1)
+        //{
+        //    if (entry.path().extension().string() == ".wad")
+        //    {
+        //        WadFile wad;
+        //        wad.Read(entry.path());
+        //        for (int i = 0; i < wad._FileEntries.size(); i++)
+        //        {
+        //            if ((int)wad._FileEntries[i].type == 32801)
+        //            {
+        //                std::stringstream s;
+        //                std::string name = wad._FileEntries[i].name.substr(3);
+        //                s << std::hex << name.substr(name.find_last_of("_") + 1, 16);
+        //                uint64_t hash = 0;
+        //                s >> hash;
+        //                for (int j = 0; j < gnfHashes.size(); j++)
+        //                {
+        //                    if (hash == gnfHashes[j])
+        //                    {
+        //                        size_t offptr = wad._FileEntries[i].offset;
+        //                        offptr += 0x47;
+        //                        byte byteptr = 0xE;
+        //                        wad.fs.seekp(offptr, std::ios::beg);
+
+        //                        wad.fs.write((char*)&byteptr, sizeof byteptr);
+
+        //                        uint16_t maxRes = 8192;
+
+        //                        wad.fs.write((char*)&maxRes, sizeof maxRes);
+        //                        wad.fs.write((char*)&maxRes, sizeof maxRes);
+
+        //                        wad.fs.seekp(0xA, std::ios::cur);
+
+        //                        switch (gnfImages[j]->header.format)
+        //                        {
+        //                        case Gnf::Format::FormatBC1:
+        //                        case Gnf::Format::Format8:
+        //                        case Gnf::Format::FormatBC4:
+        //                            byteptr = 0x3;
+        //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
+        //                            byteptr = 0xB;
+        //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
+        //                            byteptr = 0x2B;
+        //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
+        //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
+        //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
+        //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
+        //                            break;
+        //                        case Gnf::Format::FormatBC2:
+        //                        case Gnf::Format::FormatBC3:
+        //                        case Gnf::Format::FormatBC7:
+        //                        case Gnf::Format::FormatBC5:
+        //                        case Gnf::Format::FormatBC6:
+        //                            byteptr = 0x6;
+        //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
+        //                            byteptr = 0x16;
+        //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
+        //                            byteptr = 0x56;
+        //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
+        //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
+        //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
+        //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
+        //                            break;
+        //                        default:
+        //                            throw std::exception("Format not implemented!");
+        //                            break;
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //        wad.fs.close();
+        //    }
+        //}
+    }
+    std::filesystem::path outTexpackPath = gnfSrcDir.parent_path() / (gnfSrcDir.filename().string() + ".texpack");
+    std::filesystem::path outTexpackTocPath = gnfSrcDir.parent_path() / (gnfSrcDir.filename().string() + ".texpack.toc");
+
+    std::ofstream ofs(outTexpackPath.string(), std::ios::binary | std::ios::out);
+    std::ofstream ofs1(outTexpackTocPath.string(), std::ios::binary | std::ios::out);
+
+    for (size_t i = 0; i < 4; i++)
+    {
+        uint64_t z = 0x0ULL;
+        ofs.write((char*)&z, sizeof(z));
+        ofs1.write((char*)&z, sizeof(z));
+    }
+
+    uint32_t _texSectionOff = (0x38 + gnfImages.size() * 0x18 + gnfImages.size() * 0x20 + 15) & (~15);
+    uint32_t _blocksCount = gnfImages.size();
+    uint32_t _blocksInfoOff = 0x38 + gnfImages.size() * 0x18;
+    uint32_t _TexsCount = gnfImages.size();
+
+    ofs.write((char*)&_texSectionOff, sizeof(_texSectionOff));
+    ofs.write((char*)&_blocksCount, sizeof(_blocksCount));
+    ofs.write((char*)&_blocksInfoOff, sizeof(_blocksInfoOff));
+    ofs.write((char*)&_TexsCount, sizeof(_TexsCount));
+    uint64_t z = 0x5ULL;
+    ofs.write((char*)&z, sizeof(z));
+
+    ofs1.write((char*)&_texSectionOff, sizeof(_texSectionOff));
+    ofs1.write((char*)&_blocksCount, sizeof(_blocksCount));
+    ofs1.write((char*)&_blocksInfoOff, sizeof(_blocksInfoOff));
+    ofs1.write((char*)&_TexsCount, sizeof(_TexsCount));
+    ofs1.write((char*)&z, sizeof(z));
+
+    Texpack::TexInfo* texInfos = new Texpack::TexInfo[_TexsCount];
+    Texpack::BlockInfo* blockInfos = new Texpack::BlockInfo[_TexsCount];
+
+    size_t woff = _texSectionOff;
+    for (size_t i = 0; i < _TexsCount; i++)
+    {
+        Gnf::GnfImage*& gnfImg = gnfImages[i];
+
+        for (size_t j = 0; j < texpacks.size(); j++)
+        {
+            if (texpacks[j]->GetUserHash(gnfHashes[i], gnfImg->header.userHash))
+                break;
+        }
+        Texpack::TexInfo& texInfo = texInfos[i];
+        texInfo._fileHash = gnfHashes[i];
+        texInfo._userHash = gnfImg->header.userHash;
+        texInfo._blockInfoOff = _blocksInfoOff + (i * 0x20);
+
+        Texpack::BlockInfo& blockInfo = blockInfos[i];
+        blockInfo._blockOff = uint32_t(woff >> 4);
+        blockInfo._rawSize = gnfImg->header.dataSize;
+        blockInfo._blockSize = (gnfImg->header.fileSize + 0x24 + 15) & (~15);
+        blockInfo._mipLvlStart = gnfImg->header.mipmaps;
+        blockInfo._mipLvlEnd = 0;
+        blockInfo._tocFileIdx = 0;
+        blockInfo._mipWidth = gnfImg->header.width + 1;
+        blockInfo._mipHeight = gnfImg->header.height + 1;
+        blockInfo._nextSiblingBlockInfoOff = -1LL;
+
+        woff += blockInfo._blockSize;
+    }
+
+    for (size_t i = 0; i < _TexsCount; i++)
+    {
+        Texpack::TexInfo& texInfo = texInfos[i];
+
+        ofs.write((char*)&texInfo, sizeof(texInfo));
+        ofs1.write((char*)&texInfo, sizeof(texInfo));
+    }
+    for (size_t i = 0; i < _TexsCount; i++)
+    {
+        Texpack::BlockInfo& blockInfo = blockInfos[i];
+
+        ofs.write((char*)&blockInfo, sizeof(blockInfo));
+        ofs1.write((char*)&blockInfo, sizeof(blockInfo));
+    }
+
+    size_t curOff = ofs.tellp();
+    for (size_t i = 0; i < _texSectionOff - curOff; i++)
+    {
+        byte zz = 0;
+        ofs.write((char*)&zz, sizeof(zz));
+        ofs1.write((char*)&zz, sizeof(zz));
+    }
+
+    ofs1.close();
+    for (size_t i = 0; i < _TexsCount; i++)
+    {
+        Gnf::GnfImage*& gnfImg = gnfImages[i];
+        uint32_t zz = 0x1U;
+        ofs.write((char*)&zz, sizeof(zz));
+        zz = 0x124U;
+        ofs.write((char*)&zz, sizeof(zz));
+
+        uint32_t blockSize = (gnfImg->header.fileSize + 0x24 + 15) & (~15);
+        ofs.write((char*)&blockSize, sizeof(blockSize));
+        zz = 0x5U;
+        ofs.write((char*)&zz, sizeof(zz));
+        ofs.write((char*)&gnfImg->header, sizeof(gnfImg->header));
+
+        uint64_t zzz = 0x3ULL;
+        ofs.write((char*)&zzz, sizeof(zzz));
+        uint16_t zzzz = uint16_t(gnfImg->header.mipmaps + 1);
+        ofs.write((char*)&zzzz, sizeof(zzzz));
+        ofs.write((char*)&zzzz, sizeof(zzzz));
+        ofs.write((char*)&gnfImg->header.dataSize, sizeof(gnfImg->header.dataSize));
+        zz = 0x2U;
+        ofs.write((char*)&zz, sizeof(zz));
+
+        ofs.write((char*)gnfImg->imageData.get(), gnfImg->header.dataSize);
+
+        curOff = ofs.tellp();
+        for (size_t j = 0; j < ((curOff + 15) & (~15)) - curOff; j++)
+        {
+            byte z = 0;
+            ofs.write((char*)&z, sizeof(z));
+        }
+    }
+    ofs.close();
+    return true;
+}
 bool ExportAllTextures(WADArchive& wad, vector<Texpack*>& texpacks, const std::filesystem::path& outdir,bool dds)
 {
     if (wad._fileEntries.size() < 1 || texpacks.size() < 1)

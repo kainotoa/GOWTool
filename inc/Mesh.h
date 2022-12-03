@@ -85,4 +85,8 @@ struct MeshInfo
 	string name;
 
 	uint8_t indicesStride = 2;
+	uint16_t bytesPerVertexOrUnk = 0;
+	uint8_t countComp2 = 0;
+	int8_t flagOrUnk = 0;
+	uint8_t R32_UNK_Usage = 0;
 };

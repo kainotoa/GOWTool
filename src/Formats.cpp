@@ -81,23 +81,31 @@ namespace GOWR
 
 
 			uint8_t buffCount = 0;
-			uint8_t indicesStride = 0;
-			uint8_t compCount = 0;
 			stream.read((char*)&buffCount, sizeof buffCount);
-			stream.read((char*)&indicesStride, sizeof indicesStride);
-			stream.seekg(0x2, ios::cur);
-			stream.read((char*)&compCount, sizeof buffCount);
 
-			info.indicesStride = indicesStride;
+			stream.read((char*)&info.indicesStride, sizeof info.indicesStride);
 
-			stream.seekg(baseOff + i * sizeof defOff + defOff + compOffset);
+			stream.read((char*)&info.bytesPerVertexOrUnk, sizeof info.bytesPerVertexOrUnk);
+
+			uint8_t compCount = 0;
+			stream.read((char*)&compCount, sizeof compCount);
+
+			stream.read((char*)&info.countComp2, sizeof info.countComp2);
+
+			stream.read((char*)&info.flagOrUnk, sizeof info.flagOrUnk);
+
+			stream.read((char*)&info.R32_UNK_Usage, sizeof info.R32_UNK_Usage);
+
+			
 			info.Components = vector<Component>(compCount);
+			stream.seekg(baseOff + i * sizeof defOff + defOff + compOffset);
 			for (uint8_t j = 0; j < compCount; j++)
 			{
 				Component& comp = info.Components[j];
 				stream.read((char*)&comp, sizeof comp);
 			}
 
+			
 			info.bufferStride = vector<uint16_t>(buffCount);
 			for (uint8_t j = 0; j < buffCount; j++)
 			{
@@ -134,56 +142,10 @@ namespace GOWR
 				}
 			}
 
-			for (uint32_t l = 0; l < info.Components.size(); l++)
-			{
-				dataSet.emplace(info.Components[l].dataType);
-				compMap[info.Components[l].primitiveType].emplace(std::make_pair(info.Components[l].dataType, info.Components[l].elementCount));
-			}
-			//if (indicesStride != 2 && indicesStride != 4)
+			//for (uint32_t l = 0; l < info.Components.size(); l++)
 			//{
-			//	return false;
-			//}
-			//for (uint32_t i = 0; i < info.Components.size(); i++)
-			//{
-			//	switch (info.Components[i].primitiveType)
-			//	{
-			//	case PrimitiveTypes::POSITION:
-			//		if (info.Components[i].dataType != DataTypes::UNSIGNED_SHORT && info.Components[i].dataType != DataTypes::FLOAT)
-			//		{
-			//			return false;
-			//		}
-			//		break;
-			//	case PrimitiveTypes::NORMALS:
-			//	case PrimitiveTypes::TANGENTS:
-			//		if (info.Components[i].dataType != DataTypes::WORD_STRUCT_1)
-			//		{
-			//			return false;
-			//		}
-			//		break;
-			//	case PrimitiveTypes::TEXCOORD_0:
-			//	case PrimitiveTypes::TEXCOORD_1:
-			//	case PrimitiveTypes::TEXCOORD_2:
-			//		if (info.Components[i].dataType != DataTypes::UNSIGNED_SHORT && info.Components[i].dataType != DataTypes::HALFWORD_STRUCT_2 && info.Components[i].dataType != DataTypes::FLOAT)
-			//		{
-			//			return false;
-			//		}
-			//		break;
-			//	case PrimitiveTypes::JOINTS0:
-			//		if (info.Components[i].dataType != DataTypes::BYTE_STRUCT_0 && info.Components[i].dataType != DataTypes::WORD_STRUCT_0 && info.Components[i].dataType != DataTypes::HALFWORD_STRUCT_1)
-			//		{
-			//			return false;
-			//		}
-			//		break;
-			//	case PrimitiveTypes::WEIGHTS0:
-			//		if (info.Components[i].dataType != DataTypes::WORD_STRUCT_1 && info.Components[i].dataType != DataTypes::WORD_STRUCT_0)
-			//		{
-			//			return false;
-			//		}
-			//		break;
-			//	default:
-			//		cout << "";
-			//		break;
-			//	}
+			//	dataSet.emplace(info.Components[l].dataType);
+			//	compMap[info.Components[l].primitiveType].emplace(std::make_pair(info.Components[l].dataType, info.Components[l].elementCount));
 			//}
 
 			info.bufferOffset = vector<uint64_t>(buffCount);

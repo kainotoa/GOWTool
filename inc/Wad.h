@@ -10,6 +10,7 @@ struct WadFile
 		SkinnedMeshDef = 0x98,
 		Texture = 0x80A1,
 		SkinnedMeshBuff = 0x8198,
+		Anime = 0x72,
 	};
 	struct FileDesc
 	{

@@ -10,6 +10,7 @@
 #include "Gnf.h"
 #include "converter.h"
 #include "glTFDeserializer.h"
+#include "animation.h"
 #include <map>
 #include <filesystem>;
 
@@ -732,6 +733,33 @@ bool ExportAllRigidMesh(WadFile& wad, vector<Lodpack*>& lodpacks, const std::fil
     return true;
 }
 
+void ParseAnime(WadFile& wad)
+{
+    for (size_t i = 0; i != wad._FileEntries.size(); ++i)
+    {
+        auto& entry = wad._FileEntries[i];
+
+        if (entry.type != WadFile::FileType::Anime)
+        {
+            continue;
+        }
+
+        if (entry.name != "ANM_heroa00")
+        {
+            continue;
+        }
+        cout << "PackName: " << entry.name << "\n";
+
+        std::stringstream animeStream;
+        wad.GetBuffer(i, animeStream);
+
+        Anime anime;
+        anime.Read(animeStream);
+
+        cout << "----------------" << "\n";
+    }
+}
+
 void PrintHelp()
 {
     cout << "\nGod of War Tool\n";
@@ -941,6 +969,10 @@ int main(int argc, char* argv[])
                 Utils::Logger::Error("\nspecified gamedir(including sub-directories) doesn't contain any .lodpack files, export failed");
                 return -1;
             }
+
+            // Just for debugging purpose right now
+            ParseAnime(wad);
+
             if (ExportAllSkinnedMesh(wad, lodpacks, outdir) && ExportAllRigidMesh(wad, lodpacks, outdir))
             {
                 Utils::Logger::Success(("\nSuccessfully exported all meshes to: " + outdir.string()).c_str());

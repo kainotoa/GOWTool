@@ -106,7 +106,7 @@ size_t ConvertGnfToDDS(const byte* gnfsrc, const size_t& gnfsize, byte*& ddsout)
 		throw std::exception("Format not implemented!");
 		break;
 	}
-	DirectX::_EncodeDDSHeader(meta, flag, header, 148, required);
+	DirectX::EncodeDDSHeader(meta, flag, header, 148, required);
 
 	size_t datasize = 0;
 	for (uint32_t i = 0; i < meta.mipLevels; i++)

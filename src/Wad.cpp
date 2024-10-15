@@ -146,34 +146,6 @@ bool WADArchive::Read(std::shared_ptr<std::iostream> instream)
 
     _fileAbsOffsets = vector<size_t>(_header.fileCount);
 
-    //vector<uint32_t> sizesPadded(_header.fileCount);
-    //std::map<uint8_t, uint32_t> totalSize;
-    //
-    //totalSize[0] = _header.block0Size;
-    //totalSize[1] = _header.block1Size;
-    //totalSize[2] = _header.block2Size;
-    //totalSize[8] = _header.block8Size;
-
-    //for (long long i = _header.fileCount - 1; i >= 0; i--)
-    //{
-    //    if (_fileEntries[i].nameStr() != "autopad")
-    //    {
-    //        sizesPadded[i] = totalSize[_fileEntries[i].blockBitSet] - _fileEntries[i].offset;
-    //        totalSize[_fileEntries[i].blockBitSet] -= sizesPadded[i];
-    //    }
-    //}
-
-    //for (uint32_t i = 0; i < _header.fileCount; i++)
-    //{
-    //    if (_fileEntries[i].unk2[20] == 0 || _fileEntries[i].unk2[20] == 16)
-    //    {
-
-    //    }
-    //    else
-    //    {
-    //        cout << "";
-    //    }
-    //}
 
     std::queue<uint32_t> q;
 

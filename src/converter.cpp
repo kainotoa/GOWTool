@@ -44,6 +44,8 @@ size_t ConvertGnfToDDS(const byte* gnfsrc, const size_t& gnfsize, byte*& ddsout)
 		break;
 	case Gnf::Format::FormatBC7:
 		meta.format = gnfimg.header.formatType == Gnf::FormatType::FormatTypeSRGB ? DXGI_FORMAT_BC7_UNORM_SRGB : DXGI_FORMAT_BC7_UNORM;
+		meta.format = DXGI_FORMAT_BC7_UNORM;
+
 		break;
 	case Gnf::Format::Format8:
 		if (gnfimg.header.formatType == Gnf::FormatType::FormatTypeUNorm)

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "pch.h"
+#include <set>
+#include <tuple>
+#include "Gnf.h"
 
 class Texpack
 {
@@ -41,5 +44,6 @@ public:
 	bool ExportGnf(const std::filesystem::path& dir,const uint64_t& hash,std::string name = "",bool dds = false);
 	bool ExportAllGnf(const std::filesystem::path& dir,bool dds = false);
 	bool GetUserHash(const uint64_t& hash, uint64_t& outUserHash);
+	bool SurveyFormats(std::set<std::tuple<Gnf::Format, Gnf::FormatType>> &types);
 	~Texpack();
 };

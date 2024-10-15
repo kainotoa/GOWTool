@@ -225,46 +225,25 @@ RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::iostream& file,std::str
                     }
                     else if (meshinfo.R32_UNK_Usage == 2)
                     {
-                        //uint32_t residual = 0;
-                        //uint8_t cnt1 = 1;
-                        //uint8_t cnt2 = 0;
-                        //uint32_t mask = 1023;
+                        vector<uint32_t> packedJoints(comp.elementCount);
+                        for (uint8_t s = 0; s < comp.elementCount; s++)
+                            file.read((char*)&packedJoints[s], sizeof(uint32_t));
 
-                        //for (uint8_t s = 0; s < comp.elementCount - 1; s++)
-                        //{
-                        //    uint64_t R1G11B11 = 0;
-                        //    file.read((char*)&R1G11B11, sizeof(uint32_t));
+                        Mesh.Joints[v][(comp.elementCount - 1) * 3] = (uint16_t)((packedJoints[comp.elementCount - 1] >> (21 - comp.elementCount + 1)) & 2047);
 
-                        //    uint16_t X = (R1G11B11 & mask);
-                        //    //X <<= cnt2;
-                        //    //X |= residual;
-                        //    //X <<= (cnt1 - cnt2);
-
-                        //    //cnt1++;
-                        //    //cnt2 = s;
-                        //    //mask >>= 1;
+                        for (uint8_t s = 0; s < comp.elementCount - 1; s++)
+                        {
+                            uint16_t X = uint16_t((packedJoints[s] >> (21 - s)) & 2047);
 
 
-                        //    uint16_t Y = ((R1G11B11 >> (10 - s)) & 2047);
-                        //    uint16_t Z = ((R1G11B11 >> (21 - s)) & 2047);
+                            uint16_t Y = (packedJoints[s] >> (10 - s)) & 2047;
+                            uint16_t Z = ((packedJoints[s] << (s + 1)) | (packedJoints[s + 1] >> (31 - s))) & 2047;
 
-                        //    residual = (R1G11B11 >> (32 - s));
 
-                        //    X <<= s;
-                        //    X <<= 1;
-                        //    X |= residual;
-
-                        //    //uint16_t Y = ((R1G11B11 >> (10 - s)) & 2047);
-                        //    //uint16_t Z = ((R1G11B11 >> (21 - s)) & 2047);
-
-                        //    //uint32_t test = std::rotr(R1G11B11, 10 - s);
-                        //    //R1G11B11 <<= (s + 1);
-                        //    //uint16_t X = R1G11B11 & 2047;
-
-                        //    Mesh.Joints[v][0 + s * 3] = Z;
-                        //    Mesh.Joints[v][1 + s * 3] = Y;
-                        //    Mesh.Joints[v][2 + s * 3] = X;
-                        //}
+                            Mesh.Joints[v][0 + s * 3] = X;
+                            Mesh.Joints[v][1 + s * 3] = Y;
+                            Mesh.Joints[v][2 + s * 3] = Z;
+                        }
                     }
                     else throw std::exception("Invalid R32_Usage For Joint's Data Type: " + int(comp.dataType));
                 }
@@ -290,28 +269,17 @@ RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::iostream& file,std::str
                         vec = R10G10B10A2_UNORM_TO_VEC4(R10G10B10A2);
 
 
-                        Mesh.Weights[v][0 + s * 4] = vec.X;
-                        Mesh.Weights[v][1 + s * 4] = vec.Y;
-                        Mesh.Weights[v][2 + s * 4] = vec.Z;
-                        Mesh.Weights[v][3 + s * 4] = vec.W;
+                        Mesh.Weights[v][0 + s * 3] = vec.X;
+                        Mesh.Weights[v][1 + s * 3] = vec.Y;
+                        Mesh.Weights[v][2 + s * 3] = vec.Z;
 
-                        sum += vec.X + vec.Y + vec.Z + vec.W;
+                        sum += vec.X + vec.Y + vec.Z;
                     }
-
-                    float NorRatio = 1.f / sum;
-                    
-                    for (uint8_t s = 0; s < comp.elementCount; s++)
-                    {
-                        Mesh.Weights[v][0 + s * 4] *= NorRatio;
-                        Mesh.Weights[v][1 + s * 4] *= NorRatio;
-                        Mesh.Weights[v][2 + s * 4] *= NorRatio;
-                        Mesh.Weights[v][3 + s * 4] *= NorRatio;
-                    }
+                    Mesh.Weights[v][comp.elementCount * 3] = 1 - sum;
                 }
             }
             else if (comp.dataType == DataTypes::R32_UNKNOWN)
             {
-
                 uint32_t R10G10B10A2;
                 for (uint32_t v = 0; v < meshinfo.vertCount; v++)
                 {
@@ -333,14 +301,7 @@ RawMeshContainer containRawMesh(MeshInfo& meshinfo, std::iostream& file,std::str
                         sum += vec.X + vec.Y + vec.Z;
                     }
 
-                    float NorRatio = 1.f / sum;
-
-                    for (uint8_t s = 0; s < comp.elementCount; s++)
-                    {
-                        Mesh.Weights[v][0 + s * 3] *= NorRatio;
-                        Mesh.Weights[v][1 + s * 3] *= NorRatio;
-                        Mesh.Weights[v][2 + s * 3] *= NorRatio;
-                    }
+                    Mesh.Weights[v][comp.elementCount * 3] = 1 - sum;
                 }
             }
             else throw std::exception("Weight Invalid Data Type: " + int(comp.dataType));

@@ -12,8 +12,6 @@
 #include "glTFDeserializer.h"
 #include <map>
 #include "krak.h"
-#include "lz4.h"
-
 
 using std::filesystem::path;
 using std::filesystem::directory_iterator;
@@ -594,7 +592,6 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
     {
         if (wad._fileEntries[i].type == WADArchive::FileType::GOWR_MESH_DEFN && wad._fileEntries[i].nameStr().substr(0,4) == "MESH")
         {
-
             std::string name = wad._fileEntries[i].nameStr().substr(5);
             std::stringstream meshDefStream;
             std::stringstream mgDefStream;
@@ -612,15 +609,24 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
                     break;
                 }
             }
+            for (int j = 0; j < wad._header.fileCount; j++)
+            {
+                if (wad._fileEntries[j].type == WADArchive::FileType::GOWR_MG_DEFN && (wad._fileEntries[j].nameStr().find(name) != std::string::npos))
+                {
+                    if (std::find(usedMgDefIndices.begin(), usedMgDefIndices.end(), j) != usedMgDefIndices.end())
+                        continue;
+                    wad.GetFile(j, mgDefStream);
+                    usedMgDefIndices.push_back(j);
+                    break;
+                }
+            }
 
-            bool rigPresent = false;
             Rig rig;
 
             for (int j = 0; j < wad._header.fileCount; j++)
             {
                 if (wad._fileEntries[j].type == WADArchive::FileType::GOWR_GOPROTO_RIG && (wad._fileEntries[j].nameStr().find("Proto") != std::string::npos))
                 {
-                    rigPresent = true;
                     std::string sample = Utils::str_tolower(wad._fileEntries[j].nameStr().substr(7, wad._fileEntries[j].nameStr().length() - 7));
                     if (sample == name.substr(0,name.length() - 2))
                     {
@@ -631,37 +637,13 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
                 }
             }
 
-            if (rigPresent)
-            {
-                if (wad._fileEntries[i + 2].type == WADArchive::FileType::GOWR_MG_DEFN)
-                    wad.GetFile(i + 2, mgDefStream);
-                else
-                    throw std::exception("test");
-                //for (int j = 0; j < wad._header.fileCount; j++)
-                //{
-                //    if (wad._fileEntries[j].type == WADArchive::FileType::GOWR_MG_DEFN && (wad._fileEntries[j].nameStr().find(name) != std::string::npos))
-                //    {
-                //        cout << i << " " << j << "\n";
-                //        if (std::find(usedMgDefIndices.begin(), usedMgDefIndices.end(), j) != usedMgDefIndices.end())
-                //            continue;
-                //        wad.GetFile(j, mgDefStream);
-                //        usedMgDefIndices.push_back(j);
-                //        break;
-                //    }
-                //}
-            }
-
-
             vector<MeshInfo> meshInfos;
 
             meshDefStream.seekg(0, ios::end);
             GOWR::MESH::Parse(meshDefStream, meshInfos, meshDefStream.tellg());
 
-            if (rigPresent)
-            {
-                mgDefStream.seekg(0, ios::end);
-                GOWR::MG::Parse(mgDefStream, meshInfos, mgDefStream.tellg());
-            }
+            mgDefStream.seekg(0, ios::end);
+            GOWR::MG::Parse(mgDefStream, meshInfos, mgDefStream.tellg());
 
             vector<RawMeshContainer> meshes;
             for (int j = 0; j < meshInfos.size(); j++)
@@ -692,16 +674,13 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
                     }
                 }
             }
-            if (rigPresent)
+            for (auto& mesh : meshes)
             {
-                for (auto& mesh : meshes)
+                for (auto& vert : mesh.Joints)
                 {
-                    for (auto& vert : mesh.Joints)
+                    for (auto& x : vert)
                     {
-                        for (auto& x : vert)
-                        {
-                            x = std::clamp<uint16_t>(x, 0, rig.boneCount - 1);
-                        }
+                        x = std::clamp<uint16_t>(x,0, rig.boneCount - 1);
                     }
                 }
             }
@@ -711,78 +690,69 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
     }
     return true;
 }
-bool ExportAllRigidMesh(WADArchive& wad, vector<Lodpack*>& lodpacks, const std::filesystem::path& outdir)
-{
-    if (wad._header.fileCount < 1 || lodpacks.size() < 1)
-        return false;
-    if (!std::filesystem::exists(outdir))
-        return false;
-    vector<int> usedMeshBufferIndices;
-    vector<int> usedMgDefIndices;
-    for (int i = 0; i < wad._header.fileCount; i++)
-    {
-        if (wad._fileEntries[i].type == WADArchive::FileType::GOWR_MESH_DEFN && wad._fileEntries[i].nameStr().substr(0, 4) == "MESH")
-        {
-            if (wad._fileEntries[i].nameStr() != "MESH_houseframe_grp_0")
-                continue;
-            std::string name = wad._fileEntries[i].nameStr().substr(5);
-            std::stringstream meshDefStream;
-            std::stringstream meshBuffStream;
-            std::stringstream rigStream;
-            wad.GetFile(i, meshDefStream);
-            for (int j = 0; j < wad._header.fileCount; j++)
-            {
-                if (wad._fileEntries[j].type == WADArchive::FileType::GOWR_MG_GPU_BUFF && (wad._fileEntries[j].nameStr().find(name) != std::string::npos))
-                {
-                    if (std::find(usedMeshBufferIndices.begin(), usedMeshBufferIndices.end(), j) != usedMeshBufferIndices.end())
-                        continue;
-                    wad.GetFile(j, meshBuffStream);
-                    usedMeshBufferIndices.push_back(j);
-                    break;
-                }
-            }
-
-            Rig rig;
-
-            vector<MeshInfo> meshInfos;
-
-            meshDefStream.seekg(0, ios::end);
-            GOWR::MESH::Parse(meshDefStream, meshInfos, meshDefStream.tellg());
-
-            vector<RawMeshContainer> meshes;
-            for (int j = 0; j < meshInfos.size(); j++)
-            {
-                char buf[10];
-                sprintf_s(buf, "%04d", j);
-                string subname = "submesh_" + string(buf) + "_" + std::to_string(meshInfos[j].LODlvl);
-
-                if (meshInfos[j].Hash == 0)
-                {
-                    if (meshBuffStream.tellp() != std::streampos(0))
-                    {
-                        meshes.push_back(containRawMesh(meshInfos[j], meshBuffStream, subname));
-                    }
-                }
-                else
-                {
-                    std::stringstream buffer;
-                    for (int k = 0; k < lodpacks.size(); k++)
-                    {
-                        if (lodpacks[k]->GetBuffer(meshInfos[j].Hash, buffer))
-                            break;
-                    }
-                    if (buffer.tellp() != std::streampos(0))
-                    {
-                        meshes.push_back(containRawMesh(meshInfos[j], buffer, subname));
-                    }
-                }
-            }
-            std::filesystem::path outfile = outdir / (wad._fileEntries[i].nameStr() + "---" + std::to_string(i) + ".glb");
-            WriteGLTF(outfile, meshes, rig);
-        }
-    }
-    return true;
-}
+//bool ExportAllRigidMesh(WadFile& wad, vector<Lodpack*>& lodpacks, const std::filesystem::path& outdir)
+//{
+//    if (wad._FileEntries.size() < 1 || lodpacks.size() < 1)
+//        return false;
+//    if (!std::filesystem::exists(outdir))
+//        return false;
+//    vector<int> usedMeshBufferIndices;
+//    for (int i = 0; i < wad._FileEntries.size(); i++)
+//    {
+//        if (wad._FileEntries[i].type == WadFile::FileType::RigidMeshDefData && (wad._FileEntries[i].name.find("smsh_data") != std::string::npos))
+//        {
+//            std::string name = wad._FileEntries[i].name.substr(0, wad._FileEntries[i].name.length() - 10);
+//            std::stringstream meshDefStream;
+//            wad.GetBuffer(i, meshDefStream);
+//            SmshDefinition smshDef;
+//            auto meshInfos = smshDef.ReadSmsh(meshDefStream);
+//
+//            std::stringstream meshBuffStream;
+//            for (int j = 0; j < wad._FileEntries.size(); j++)
+//            {
+//                if (wad._FileEntries[j].type == WadFile::FileType::SkinnedMeshBuff && (wad._FileEntries[j].name.find(name) != std::string::npos))
+//                {
+//                    if (std::find(usedMeshBufferIndices.begin(), usedMeshBufferIndices.end(), j) != usedMeshBufferIndices.end())
+//                        continue;
+//                    wad.GetBuffer(j, meshBuffStream);
+//                    usedMeshBufferIndices.push_back(j);
+//                    break;
+//                }
+//            }
+//            Rig rig;
+//
+//            vector<RawMeshContainer> meshes;
+//            for (int j = 0; j < meshInfos.size(); j++)
+//            {
+//                char buf[10];
+//                sprintf_s(buf, "%04d", j);
+//                string subname = "submesh_" + string(buf) + "_" + std::to_string(meshInfos[j].LODlvl);
+//                if (meshInfos[j].LODlvl > 0)
+//                    continue;
+//                if (meshInfos[j].Hash == 0)
+//                {
+//                    meshes.push_back(containRawMesh(meshInfos[j], meshBuffStream, subname));
+//                }
+//                else
+//                {
+//                    std::stringstream buffer;
+//                    for (int k = 0; k < lodpacks.size(); k++)
+//                    {
+//                        if (lodpacks[k]->GetBuffer(meshInfos[j].Hash, buffer))
+//                            break;
+//                    }
+//                    if (buffer.tellp() != std::streampos(0))
+//                    {
+//                        meshes.push_back(containRawMesh(meshInfos[j], buffer, subname));
+//                    }
+//                }
+//            }
+//            std::filesystem::path outfile = outdir / (wad._FileEntries[i].name + "." + std::to_string(i) + ".glb");
+//            WriteGLTF(outfile, meshes, rig);
+//        }
+//    }
+//    return true;
+//}
 CommandLine Init()
 {
     CommandLine cmmdParse("God of War Tool", "Usage:\n  GOWTool");
@@ -795,9 +765,9 @@ CommandLine Init()
     cmmdParse.AddCommand("settings", "Change Tool Settings.");
     cmmdParse.AddOption("settings", "-g", "Input path to GameDir", CommandLine::OptionType::SingleArg);
 
-    //cmmdParse.AddCommand("texpack", "Target a Texpack file for E/I.");
-    //cmmdParse.AddOption("texpack", "-e", "Export Textures from Texpack.");
-    //cmmdParse.AddOption("texpack", "-p", "Input path to .texpack file.", CommandLine::OptionType::MultiArgs);
+    cmmdParse.AddCommand("texpack", "Target a Texpack file for E/I.");
+    cmmdParse.AddOption("texpack", "-e", "Export Textures from Texpack.");
+    cmmdParse.AddOption("texpack", "-p", "Input path to .texpack file.", CommandLine::OptionType::MultiArgs);
 
 
     return cmmdParse;
@@ -806,8 +776,7 @@ int main(int argc, char* argv[])
 {
     //directory_iterator dir(R"(D:\gowr\Image0\exec\wad\orbis_le)");
 
-    //std::fstream file(R"(D:\gowr\test.txt)", std::ios::out);
-
+    //int cnt = 0;
     //for (auto& itr : dir)
     //{
     //    if (itr.path().extension().string() == ".wad")
@@ -818,28 +787,30 @@ int main(int argc, char* argv[])
     //        {
     //            for (int i = 0; i < wad._header.fileCount; i++)
     //            {
-    //                //if (wad._fileEntries[i].type == WADArchive::FileType::GOWR_MESH_DEFN && wad._fileEntries[i].nameStr().substr(0, 4) == "MESH")
-    //                //{
-    //                //    std::stringstream meshDefStream;
-    //                //    wad.GetFile(i, meshDefStream);
-
-    //                //    vector<MeshInfo> meshInfos;
-    //                //    meshDefStream.seekg(0, ios::end);
-    //                //    if (!GOWR::MESH::Parse(meshDefStream, meshInfos, meshDefStream.tellg()))
-    //                //    {
-    //                //        cout << "\n";
-    //                //    }
-    //                //}
-    //                if (wad._fileEntries[i].type == WADArchive::FileType::GOWR_TEXTURE)
+    //                if (wad._fileEntries[i].type == WADArchive::FileType::GOWR_MESH_DEFN && wad._fileEntries[i].nameStr().substr(0, 4) == "MESH")
     //                {
-    //                    file << wad._fileEntries[i].nameStr() << itr.path().filename() << "\n";
+    //                    std::stringstream meshDefStream;
+    //                    wad.GetFile(i, meshDefStream);
+
+    //                    vector<MeshInfo> meshInfos;
+    //                    meshDefStream.seekg(0, ios::end);
+    //                    if (!GOWR::MESH::Parse(meshDefStream, meshInfos, meshDefStream.tellg()))
+    //                    {
+    //                        cout << "\n";
+    //                    }
     //                }
     //            }
+    //        }
+    //        else
+    //        {
+    //            cnt++;
+    //            cout << itr.path().string();
+    //            cout << "\n";
     //        }
     //    }
     //}
 
-    //return 0;
+
     //for (auto itr = compMap.begin(); itr != compMap.end(); itr++)
     //{
     //    cout << "Primitive: " << int(itr->first);
@@ -858,19 +829,6 @@ int main(int argc, char* argv[])
     //}
     //return 0;
 
-
-    //directory_iterator dir(R"(D:\Game\God of War Ragnarok\exec\wad\pc_le)");
-
-    //std::set<std::tuple<Gnf::Format, Gnf::FormatType>> types;
-    //for (auto& itr : dir)
-    //{
-    //    if (itr.path().extension().string() == ".texpack")
-    //    {
-    //        Texpack pack(itr.path().string());
-    //        pack.SurveyFormats(types);
-    //    }
-    //}
-
     CHAR charbuffer[260] = { 0 };
     GetCurrentDirectoryA(sizeof(charbuffer), charbuffer);
     std::filesystem::path configpath = std::filesystem::path(charbuffer) / "config.ini";
@@ -878,12 +836,22 @@ int main(int argc, char* argv[])
     GetPrivateProfileStringA("Settings", "Gamedir", "", charbuffer, sizeof(charbuffer), configpath.string().c_str());
     std::filesystem::path gamedir(charbuffer);
 
-    gamedir = gamedir / R"(exec\wad\pc_le)";
+    gamedir = gamedir / R"(exec\wad\orbis_le)";
 
     CommandLine cmmdParse = Init();
 
     if (cmmdParse.Parse(argc, argv))
     {
+        if (cmmdParse._commands["texpack"].active || cmmdParse._commands["wad"]._options["-t"].active)
+        {
+            LoadLib();
+            if (!OodLZ_Decompress)
+            {
+                string msg = "oo2core_7_win64.dll is missing/cannot be loaded, Its Mandatory for textures export\n";
+                Utils::Logger::Error(msg.c_str());
+                return -1;
+            }
+        }
         if (cmmdParse._commands["wad"].active)
         {
             auto& cmmd = cmmdParse._commands["wad"];
@@ -901,7 +869,7 @@ int main(int argc, char* argv[])
                 {
                     string msg = "Invalid Dir: " + gamedir.string() + "\n";
                     Utils::Logger::Error(msg.c_str());
-                    Utils::Logger::Error("GameDir\\exec\\wad\\pc_le is required to obtain texpack / lodpack files\n");
+                    Utils::Logger::Error("GameDir\\exec\\wad\\orbis_le is required to obtain texpack / lodpack files\n");
                     Utils::Logger::Error("GameDir (directory containing eboot.bin), pls change it through settings or edit config.ini\n");
                     cmmdParse._commands["wad"].active = false;
                     cmmdParse._commands["settings"].active = true;
@@ -953,9 +921,7 @@ int main(int argc, char* argv[])
                 path outDir = wadPath.parent_path() / wadPath.stem();
                 WADArchive wad;
                 shared_ptr<fstream> fsptr = make_shared<fstream>(wadPath, std::ios::binary | std::ios::in);
-
-                auto ssptr = DecompressWad(fsptr);
-                wad.Read(ssptr);
+                wad.Read(fsptr);
 
                 if (!wad.Test())
                 {
@@ -1039,7 +1005,7 @@ int main(int argc, char* argv[])
                 if (cmmd._options["-e"].active)
                 {
                     Texpack pack = Texpack(texPath.string());
-                    if (pack.ExportAllGnf(outDir, false))
+                    if (pack.ExportAllGnf(outDir, true))
                     {
                         Utils::Logger::Success(("Successfully exported all textures to: " + outDir.string() + "\n").c_str());
                     }

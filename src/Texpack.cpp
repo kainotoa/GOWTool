@@ -4,7 +4,6 @@
 #include "Gnf.h"
 #include "converter.h"
 #include "utils.h"
-#include <set>
 
 Texpack::Texpack(const std::filesystem::path& filepath)
 {
@@ -55,9 +54,11 @@ bool Texpack::ContainsTexture(const uint64_t& hash)
 	}
 	return false;
 }
-
 bool Texpack::ExportGnf(byte*& output, const uint64_t& hash, uint32_t& expSize)
 {
+	if (!OodLZ_Decompress)
+		return false;
+
 	TexInfo* texInfo = nullptr;
 	for (uint32_t i = 0; i < _TexsCount; i++)
 	{
@@ -103,86 +104,37 @@ bool Texpack::ExportGnf(byte*& output, const uint64_t& hash, uint32_t& expSize)
 	uint32_t writeOff = 0;
 	for (uint32_t i = 0; i < texblockInfos.size(); i++)
 	{
-		size_t ooof = (size_t(texblockInfos[i]->_blockOff) << 4) + 4;
-		fs.seekg(ooof, std::ios::beg);
+		fs.seekg((size_t(texblockInfos[i]->_blockOff) << 4) + 4, std::ios::beg);
 		uint32_t off = 0;
 		uint32_t len = 0;
 		fs.read((char*)&off, sizeof(uint32_t));
 		fs.read((char*)&len, sizeof(uint32_t));
 		fs.seekg(4, std::ios::cur);
-		if (off != 0x20)
+		if (off != 0x1CU)
 		{
 			fs.read((char*)(output + writeOff), 0x100);
 			writeOff += 0x100;
 			fs.seekg(4, std::ios::cur);
 		}
-
-		fs.seekg(8, std::ios::cur);
 		uint32_t decSize = 0;
 		fs.read((char*)&decSize, sizeof(uint32_t));
-
-		fs.seekg(4, std::ios::cur);
-		fs.read((char*)(output + writeOff), decSize);
-
+		fs.seekg(8, std::ios::cur);
+		byte* readbytes = new byte[len - off];
+		byte* writebytes = new byte[decSize];
+		fs.read((char*)readbytes, (len - off));
+		uint32_t status = OodLZ_Decompress(readbytes, len - off, writebytes, decSize, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+		if (status != decSize)
+		{
+			throw std::exception("Decompression Failed!");
+		}
+		memmove(output + writeOff, writebytes, decSize);
+		delete[] readbytes;
+		delete[] writebytes;
 		writeOff += decSize;
 	}
 	expSize = writeSize;
 	return true;
 }
-
-bool Texpack::SurveyFormats(std::set<std::tuple<Gnf::Format, Gnf::FormatType>> &types)
-{
-	for (uint32_t i = 0; i < _TexsCount; i++)
-	{ 
-		TexInfo* texInfo = &_texInfos[i];
-
-		std::vector<BlockInfo*> texblockInfos;
-
-		for (uint32_t i = 0; i < _blocksCount; i++)
-		{
-			if (texInfo->_blockInfoOff == _blockInfoOffsets[i])
-			{
-				texblockInfos.push_back(&_blockInfos[i]);
-				break;
-			}
-		}
-		if (texblockInfos.size() < 1)
-			continue;
-		while (texblockInfos.front()->_nextSiblingBlockInfoOff != -1LL)
-		{
-			for (uint32_t i = 0; i < _blocksCount; i++)
-			{
-				if (texblockInfos.front()->_nextSiblingBlockInfoOff == _blockInfoOffsets[i])
-				{
-					texblockInfos.insert(texblockInfos.begin(), &_blockInfos[i]);
-					break;
-				}
-			}
-		}
-		Gnf::Header hdr;
-
-		size_t ooof = (size_t(texblockInfos[0]->_blockOff) << 4) + 4;
-		fs.seekg(ooof, std::ios::beg);
-		uint32_t off = 0;
-		uint32_t len = 0;
-		fs.read((char*)&off, sizeof(uint32_t));
-		fs.read((char*)&len, sizeof(uint32_t));
-		fs.seekg(4, std::ios::cur);
-		if (off != 0x20)
-		{
-			fs.read((char*)&hdr, 0x100);
-		}
-		size_t s = types.size();
-		types.insert(std::make_tuple<Gnf::Format, Gnf::FormatType>(hdr.format, hdr.formatType));
-		if (types.size() > s)
-		{
-			ExportGnf(R"(D:\gowr\New folder)", texInfo->_fileHash, std::to_string(texInfo->_fileHash), false);
-			cout << texInfo->_fileHash << " " << hdr.width << " " << hdr.height << " " << (int)hdr.format << " " << (int)hdr.formatType << "\n";
-		}
-	}
-	return true;
-}
-
 bool Texpack::ExportGnf(const std::filesystem::path& dir, const uint64_t& hash, std::string name,bool dds)
 {
 	if (!std::filesystem::exists(dir))

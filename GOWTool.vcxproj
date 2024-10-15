@@ -159,7 +159,6 @@
     <ClCompile Include="src\Gnf.cpp" />
     <ClCompile Include="src\krak.cpp" />
     <ClCompile Include="src\Lodpack.cpp" />
-    <ClCompile Include="src\lz4.cpp" />
     <ClCompile Include="src\MainFunctions.cpp" />
     <ClCompile Include="src\MathFunctions.cpp" />
     <ClCompile Include="src\Rig.cpp" />
@@ -177,7 +176,6 @@
     <ClInclude Include="inc\gnf.h" />
     <ClInclude Include="inc\krak.h" />
     <ClInclude Include="inc\Lodpak.h" />
-    <ClInclude Include="inc\lz4.h" />
     <ClInclude Include="inc\MainFunctions.h" />
     <ClInclude Include="inc\MathFunctions.h" />
     <ClInclude Include="inc\Mesh.h" />
@@ -196,9 +194,6 @@
     </ProjectReference>
     <ProjectReference Include="glTF-SDK\GLTFSDK\GLTFSDK.vcxproj">
       <Project>{260f202c-db96-3039-9507-90f491f0df9c}</Project>
-    </ProjectReference>
-    <ProjectReference Include="lz4\build\VS2022\liblz4\liblz4.vcxproj">
-      <Project>{9092c5cc-3e71-41b3-bf68-4a7bdd8a5476}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

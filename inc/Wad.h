@@ -19,7 +19,6 @@ public:
 		GOWR_MESH_MAP = 0x0,
 		GOWR_MESH_DEFN = 0x1,
 		RigidMeshDefData = 0xB,
-		GOWR_SMSH_DEFN,
 		Rig = 0x3D,
 		GOWR_GOPROTO_RIG = 0x3F,
 		SkinnedMeshDef = 0x98,

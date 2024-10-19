@@ -447,9 +447,9 @@ bool ImportAllGnf(const std::filesystem::path& gnfSrcDir, vector<Texpack*>& texp
     }
 
     uint32_t _texSectionOff = (0x38 + gnfImages.size() * 0x18 + gnfImages.size() * 0x20 + 15) & (~15);
-    uint32_t _blocksCount = gnfImages.size();
-    uint32_t _blocksInfoOff = 0x38 + gnfImages.size() * 0x18;
-    uint32_t _TexsCount = gnfImages.size();
+    uint32_t _blocksCount = uint32_t(gnfImages.size());
+    uint32_t _blocksInfoOff = uint32_t(0x38 + gnfImages.size() * 0x18);
+    uint32_t _TexsCount = uint32_t(gnfImages.size());
 
     ofs.write((char*)&_texSectionOff, sizeof(_texSectionOff));
     ofs.write((char*)&_blocksCount, sizeof(_blocksCount));
@@ -590,7 +590,7 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
         return false;
     vector<int> usedMeshBufferIndices;
     vector<int> usedMgDefIndices;
-    for (int i = 0; i < wad._header.fileCount; i++)
+    for (uint32_t i = 0; i < wad._header.fileCount; i++)
     {
         if (wad._fileEntries[i].type == WADArchive::FileType::GOWR_MESH_DEFN && wad._fileEntries[i].nameStr().substr(0,4) == "MESH")
         {
@@ -601,7 +601,7 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
             std::stringstream meshBuffStream;
             std::stringstream rigStream;
             wad.GetFile(i, meshDefStream);
-            for (int j = 0; j < wad._header.fileCount; j++)
+            for (uint32_t j = 0; j < wad._header.fileCount; j++)
             {
                 if (wad._fileEntries[j].type == WADArchive::FileType::GOWR_MG_GPU_BUFF && (wad._fileEntries[j].nameStr().find(name) != std::string::npos))
                 {
@@ -616,7 +616,7 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
             bool rigPresent = false;
             Rig rig;
 
-            for (int j = 0; j < wad._header.fileCount; j++)
+            for (uint32_t j = 0; j < wad._header.fileCount; j++)
             {
                 if (wad._fileEntries[j].type == WADArchive::FileType::GOWR_GOPROTO_RIG && (wad._fileEntries[j].nameStr().find("Proto") != std::string::npos))
                 {
@@ -633,24 +633,19 @@ bool ExportAllSkinnedMesh(WADArchive& wad, vector<Lodpack*>& lodpacks,const std:
 
             if (rigPresent)
             {
-                if (wad._fileEntries[i + 2].type == WADArchive::FileType::GOWR_MG_DEFN)
-                    wad.GetFile(i + 2, mgDefStream);
-                else
-                    throw std::exception("test");
-                //for (int j = 0; j < wad._header.fileCount; j++)
-                //{
-                //    if (wad._fileEntries[j].type == WADArchive::FileType::GOWR_MG_DEFN && (wad._fileEntries[j].nameStr().find(name) != std::string::npos))
-                //    {
-                //        cout << i << " " << j << "\n";
-                //        if (std::find(usedMgDefIndices.begin(), usedMgDefIndices.end(), j) != usedMgDefIndices.end())
-                //            continue;
-                //        wad.GetFile(j, mgDefStream);
-                //        usedMgDefIndices.push_back(j);
-                //        break;
-                //    }
-                //}
+                for (uint32_t j = i + 1; j < wad._header.fileCount; j++)
+                {
+                    if (wad._fileEntries[j].type == WADArchive::FileType::GOWR_MG_DEFN && (wad._fileEntries[j].nameStr().find(name) != std::string::npos))
+                    {
+                        cout << i << " " << j << "\n";
+                        if (std::find(usedMgDefIndices.begin(), usedMgDefIndices.end(), j) != usedMgDefIndices.end())
+                            continue;
+                        wad.GetFile(j, mgDefStream);
+                        usedMgDefIndices.push_back(j);
+                        break;
+                    }
+                }
             }
-
 
             vector<MeshInfo> meshInfos;
 
@@ -719,7 +714,7 @@ bool ExportAllRigidMesh(WADArchive& wad, vector<Lodpack*>& lodpacks, const std::
         return false;
     vector<int> usedMeshBufferIndices;
     vector<int> usedMgDefIndices;
-    for (int i = 0; i < wad._header.fileCount; i++)
+    for (uint32_t i = 0; i < wad._header.fileCount; i++)
     {
         if (wad._fileEntries[i].type == WADArchive::FileType::GOWR_MESH_DEFN && wad._fileEntries[i].nameStr().substr(0, 4) == "MESH")
         {
@@ -730,7 +725,7 @@ bool ExportAllRigidMesh(WADArchive& wad, vector<Lodpack*>& lodpacks, const std::
             std::stringstream meshBuffStream;
             std::stringstream rigStream;
             wad.GetFile(i, meshDefStream);
-            for (int j = 0; j < wad._header.fileCount; j++)
+            for (uint32_t j = 0; j < wad._header.fileCount; j++)
             {
                 if (wad._fileEntries[j].type == WADArchive::FileType::GOWR_MG_GPU_BUFF && (wad._fileEntries[j].nameStr().find(name) != std::string::npos))
                 {
@@ -750,10 +745,10 @@ bool ExportAllRigidMesh(WADArchive& wad, vector<Lodpack*>& lodpacks, const std::
             GOWR::MESH::Parse(meshDefStream, meshInfos, meshDefStream.tellg());
 
             vector<RawMeshContainer> meshes;
-            for (int j = 0; j < meshInfos.size(); j++)
+            for (size_t j = 0; j < meshInfos.size(); j++)
             {
                 char buf[10];
-                sprintf_s(buf, "%04d", j);
+                sprintf_s(buf, "%04zd", j);
                 string subname = "submesh_" + string(buf) + "_" + std::to_string(meshInfos[j].LODlvl);
 
                 if (meshInfos[j].Hash == 0)

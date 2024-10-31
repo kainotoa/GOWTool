@@ -9,7 +9,7 @@
 
 size_t ConvertGnfToDDS(const byte* gnfsrc, const size_t& gnfsize, byte*& ddsout)
 {
-	Gnf::GnfImage gnfimg;
+	Gnf::Ps4::GnfImage gnfimg;
 	gnfimg.ReadImage(gnfsrc);
 
 	DirectX::TexMetadata meta;
@@ -24,37 +24,37 @@ size_t ConvertGnfToDDS(const byte* gnfsrc, const size_t& gnfsize, byte*& ddsout)
 
 	switch (gnfimg.header.format)
 	{
-	case Gnf::Format::FormatBC1:
-		meta.format = gnfimg.header.formatType == Gnf::FormatType::FormatTypeSRGB ? DXGI_FORMAT_BC1_UNORM_SRGB : DXGI_FORMAT_BC1_UNORM;
+	case Gnf::Ps4::Format::FormatBC1:
+		meta.format = gnfimg.header.formatType == Gnf::Ps4::FormatType::FormatTypeSRGB ? DXGI_FORMAT_BC1_UNORM_SRGB : DXGI_FORMAT_BC1_UNORM;
 		break;
-	case Gnf::Format::FormatBC2:
-		meta.format = gnfimg.header.formatType == Gnf::FormatType::FormatTypeSRGB ? DXGI_FORMAT_BC2_UNORM_SRGB : DXGI_FORMAT_BC2_UNORM;
+	case Gnf::Ps4::Format::FormatBC2:
+		meta.format = gnfimg.header.formatType == Gnf::Ps4::FormatType::FormatTypeSRGB ? DXGI_FORMAT_BC2_UNORM_SRGB : DXGI_FORMAT_BC2_UNORM;
 		break;
-	case Gnf::Format::FormatBC3:
-		meta.format = gnfimg.header.formatType == Gnf::FormatType::FormatTypeSRGB ? DXGI_FORMAT_BC3_UNORM_SRGB : DXGI_FORMAT_BC3_UNORM;
+	case Gnf::Ps4::Format::FormatBC3:
+		meta.format = gnfimg.header.formatType == Gnf::Ps4::FormatType::FormatTypeSRGB ? DXGI_FORMAT_BC3_UNORM_SRGB : DXGI_FORMAT_BC3_UNORM;
 		break;
-	case Gnf::Format::FormatBC4:
-		meta.format = gnfimg.header.formatType == Gnf::FormatType::FormatTypeSNorm ? DXGI_FORMAT_BC4_SNORM : DXGI_FORMAT_BC4_UNORM;
+	case Gnf::Ps4::Format::FormatBC4:
+		meta.format = gnfimg.header.formatType == Gnf::Ps4::FormatType::FormatTypeSNorm ? DXGI_FORMAT_BC4_SNORM : DXGI_FORMAT_BC4_UNORM;
 		break;
-	case Gnf::Format::FormatBC5:
-		meta.format = gnfimg.header.formatType == Gnf::FormatType::FormatTypeSNorm ? DXGI_FORMAT_BC5_SNORM : DXGI_FORMAT_BC5_UNORM;
+	case Gnf::Ps4::Format::FormatBC5:
+		meta.format = gnfimg.header.formatType == Gnf::Ps4::FormatType::FormatTypeSNorm ? DXGI_FORMAT_BC5_SNORM : DXGI_FORMAT_BC5_UNORM;
 		break;
-	case Gnf::Format::FormatBC6:
-		meta.format = gnfimg.header.formatType == Gnf::FormatType::FormatTypeSNorm ? DXGI_FORMAT_BC6H_SF16 : DXGI_FORMAT_BC6H_UF16;
+	case Gnf::Ps4::Format::FormatBC6:
+		meta.format = gnfimg.header.formatType == Gnf::Ps4::FormatType::FormatTypeSNorm ? DXGI_FORMAT_BC6H_SF16 : DXGI_FORMAT_BC6H_UF16;
 		break;
-	case Gnf::Format::FormatBC7:
-		meta.format = gnfimg.header.formatType == Gnf::FormatType::FormatTypeSRGB ? DXGI_FORMAT_BC7_UNORM_SRGB : DXGI_FORMAT_BC7_UNORM;
+	case Gnf::Ps4::Format::FormatBC7:
+		meta.format = gnfimg.header.formatType == Gnf::Ps4::FormatType::FormatTypeSRGB ? DXGI_FORMAT_BC7_UNORM_SRGB : DXGI_FORMAT_BC7_UNORM;
 		meta.format = DXGI_FORMAT_BC7_UNORM;
 
 		break;
-	case Gnf::Format::Format8:
-		if (gnfimg.header.formatType == Gnf::FormatType::FormatTypeUNorm)
+	case Gnf::Ps4::Format::Format8:
+		if (gnfimg.header.formatType == Gnf::Ps4::FormatType::FormatTypeUNorm)
 			meta.format = DXGI_FORMAT_R8_UNORM;
-		else if (gnfimg.header.formatType == Gnf::FormatType::FormatTypeSNorm)
+		else if (gnfimg.header.formatType == Gnf::Ps4::FormatType::FormatTypeSNorm)
 			meta.format = DXGI_FORMAT_R8_SNORM;
-		else if (gnfimg.header.formatType == Gnf::FormatType::FormatTypeUInt)
+		else if (gnfimg.header.formatType == Gnf::Ps4::FormatType::FormatTypeUInt)
 			meta.format = DXGI_FORMAT_R8_UINT;
-		else if (gnfimg.header.formatType == Gnf::FormatType::FormatTypeSInt)
+		else if (gnfimg.header.formatType == Gnf::Ps4::FormatType::FormatTypeSInt)
 			meta.format = DXGI_FORMAT_R8_SINT;
 		break;
 	default:
@@ -67,18 +67,18 @@ size_t ConvertGnfToDDS(const byte* gnfsrc, const size_t& gnfsize, byte*& ddsout)
 	size_t pixbl = 4;
 	switch (gnfimg.header.format)
 	{
-	case Gnf::Format::FormatBC1:
-	case Gnf::Format::FormatBC4:
+	case Gnf::Ps4::Format::FormatBC1:
+	case Gnf::Ps4::Format::FormatBC4:
 		bpp = 4;
 		break;
-	case Gnf::Format::FormatBC2:
-	case Gnf::Format::FormatBC3:
-	case Gnf::Format::FormatBC5:
-	case Gnf::Format::FormatBC6:
-	case Gnf::Format::FormatBC7:
+	case Gnf::Ps4::Format::FormatBC2:
+	case Gnf::Ps4::Format::FormatBC3:
+	case Gnf::Ps4::Format::FormatBC5:
+	case Gnf::Ps4::Format::FormatBC6:
+	case Gnf::Ps4::Format::FormatBC7:
 		bpp = 8;
 		break;
-	case Gnf::Format::Format8:
+	case Gnf::Ps4::Format::Format8:
 		bpp = 8;
 		pixbl = 1;
 		break;
@@ -92,16 +92,16 @@ size_t ConvertGnfToDDS(const byte* gnfsrc, const size_t& gnfsize, byte*& ddsout)
 	DirectX::DDS_FLAGS flag = DirectX::DDS_FLAGS::DDS_FLAGS_NONE | DirectX::DDS_FLAGS::DDS_FLAGS_ALLOW_LARGE_FILES;
 	switch (gnfimg.header.format)
 	{
-	case Gnf::Format::FormatBC1:
-	case Gnf::Format::FormatBC2:
-	case Gnf::Format::FormatBC3:
-	case Gnf::Format::FormatBC4:
-	case Gnf::Format::FormatBC5:
-	case Gnf::Format::Format8:
+	case Gnf::Ps4::Format::FormatBC1:
+	case Gnf::Ps4::Format::FormatBC2:
+	case Gnf::Ps4::Format::FormatBC3:
+	case Gnf::Ps4::Format::FormatBC4:
+	case Gnf::Ps4::Format::FormatBC5:
+	case Gnf::Ps4::Format::Format8:
 		flag |= (meta.width > 4096) || (meta.height > 4096) ? DirectX::DDS_FLAGS::DDS_FLAGS_FORCE_DX10_EXT : DirectX::DDS_FLAGS::DDS_FLAGS_FORCE_DX9_LEGACY;
 		break;
-	case Gnf::Format::FormatBC6:
-	case Gnf::Format::FormatBC7:
+	case Gnf::Ps4::Format::FormatBC6:
+	case Gnf::Ps4::Format::FormatBC7:
 		flag |= DirectX::DDS_FLAGS::DDS_FLAGS_FORCE_DX10_EXT;
 		break;
 	default:
@@ -164,7 +164,7 @@ size_t ConvertGnfToDDS(const byte* gnfsrc, const size_t& gnfsize, byte*& ddsout)
 		size_t size = tempw * temph * bpp / 8;
 
 		byte* tempData = new byte[size];
-		Gnf::GnfImage::UnSwizzle(gnfimg.imageData.get() + gnfoff, tempData, tempw, temph, bpp,pixbl);
+		Gnf::Ps4::GnfImage::UnSwizzle(gnfimg.imageData.get() + gnfoff, tempData, tempw, temph, bpp,pixbl);
 		gnfoff += size;
 
 		size_t size1 = w * h * bpp / 8;
@@ -191,58 +191,58 @@ size_t ConvertDDSToGnf(const byte* ddssrc,const size_t &ddssize, byte*& gnfout)
 	std::unique_ptr<DirectX::ScratchImage> image(new (std::nothrow) DirectX::ScratchImage);
 	DirectX::LoadFromDDSMemory(ddssrc, ddssize, flags, &meta, *image);
 
-	Gnf::GnfImage gnfImg;
+	Gnf::Ps4::GnfImage gnfImg;
 
 	switch (meta.format)
 	{
 	case DXGI_FORMAT_BC1_UNORM:
 	case DXGI_FORMAT_BC1_UNORM_SRGB:
-		gnfImg.header.format = Gnf::Format::FormatBC1;
-		gnfImg.header.formatType = meta.format == DXGI_FORMAT_BC1_UNORM_SRGB ? Gnf::FormatType::FormatTypeSRGB : Gnf::FormatType::FormatTypeUNorm;
+		gnfImg.header.format = Gnf::Ps4::Format::FormatBC1;
+		gnfImg.header.formatType = meta.format == DXGI_FORMAT_BC1_UNORM_SRGB ? Gnf::Ps4::FormatType::FormatTypeSRGB : Gnf::Ps4::FormatType::FormatTypeUNorm;
 		break;
 	case DXGI_FORMAT_BC2_UNORM:
 	case DXGI_FORMAT_BC2_UNORM_SRGB:
-		gnfImg.header.format = Gnf::Format::FormatBC2;
-		gnfImg.header.formatType = meta.format == DXGI_FORMAT_BC2_UNORM_SRGB ? Gnf::FormatType::FormatTypeSRGB : Gnf::FormatType::FormatTypeUNorm;
+		gnfImg.header.format = Gnf::Ps4::Format::FormatBC2;
+		gnfImg.header.formatType = meta.format == DXGI_FORMAT_BC2_UNORM_SRGB ? Gnf::Ps4::FormatType::FormatTypeSRGB : Gnf::Ps4::FormatType::FormatTypeUNorm;
 		break;
 	case DXGI_FORMAT_BC3_UNORM:
 	case DXGI_FORMAT_BC3_UNORM_SRGB:
-		gnfImg.header.format = Gnf::Format::FormatBC3;
-		gnfImg.header.formatType = meta.format == DXGI_FORMAT_BC3_UNORM_SRGB ? Gnf::FormatType::FormatTypeSRGB : Gnf::FormatType::FormatTypeUNorm;
+		gnfImg.header.format = Gnf::Ps4::Format::FormatBC3;
+		gnfImg.header.formatType = meta.format == DXGI_FORMAT_BC3_UNORM_SRGB ? Gnf::Ps4::FormatType::FormatTypeSRGB : Gnf::Ps4::FormatType::FormatTypeUNorm;
 		break;
 	case DXGI_FORMAT_BC4_UNORM:
 	case DXGI_FORMAT_BC4_SNORM:
-		gnfImg.header.format = Gnf::Format::FormatBC4;
-		gnfImg.header.formatType = meta.format == DXGI_FORMAT_BC4_SNORM ? Gnf::FormatType::FormatTypeSNorm : Gnf::FormatType::FormatTypeUNorm;
+		gnfImg.header.format = Gnf::Ps4::Format::FormatBC4;
+		gnfImg.header.formatType = meta.format == DXGI_FORMAT_BC4_SNORM ? Gnf::Ps4::FormatType::FormatTypeSNorm : Gnf::Ps4::FormatType::FormatTypeUNorm;
 		break;
 	case DXGI_FORMAT_BC5_UNORM:
 	case DXGI_FORMAT_BC5_SNORM:
-		gnfImg.header.format = Gnf::Format::FormatBC5;
-		gnfImg.header.formatType = meta.format == DXGI_FORMAT_BC5_SNORM ? Gnf::FormatType::FormatTypeSNorm : Gnf::FormatType::FormatTypeUNorm;
+		gnfImg.header.format = Gnf::Ps4::Format::FormatBC5;
+		gnfImg.header.formatType = meta.format == DXGI_FORMAT_BC5_SNORM ? Gnf::Ps4::FormatType::FormatTypeSNorm : Gnf::Ps4::FormatType::FormatTypeUNorm;
 		break;
 	case DXGI_FORMAT_BC6H_UF16:
 	case DXGI_FORMAT_BC6H_SF16:
-		gnfImg.header.format = Gnf::Format::FormatBC6;
-		gnfImg.header.formatType = meta.format == DXGI_FORMAT_BC6H_SF16 ? Gnf::FormatType::FormatTypeSNorm : Gnf::FormatType::FormatTypeUNorm;
+		gnfImg.header.format = Gnf::Ps4::Format::FormatBC6;
+		gnfImg.header.formatType = meta.format == DXGI_FORMAT_BC6H_SF16 ? Gnf::Ps4::FormatType::FormatTypeSNorm : Gnf::Ps4::FormatType::FormatTypeUNorm;
 		break;
 	case DXGI_FORMAT_BC7_UNORM:
 	case DXGI_FORMAT_BC7_UNORM_SRGB:
-		gnfImg.header.format = Gnf::Format::FormatBC7;
-		gnfImg.header.formatType = meta.format == DXGI_FORMAT_BC7_UNORM_SRGB ? Gnf::FormatType::FormatTypeSRGB : Gnf::FormatType::FormatTypeUNorm;
+		gnfImg.header.format = Gnf::Ps4::Format::FormatBC7;
+		gnfImg.header.formatType = meta.format == DXGI_FORMAT_BC7_UNORM_SRGB ? Gnf::Ps4::FormatType::FormatTypeSRGB : Gnf::Ps4::FormatType::FormatTypeUNorm;
 		break;
 	case DXGI_FORMAT_R8_UNORM:
 	case DXGI_FORMAT_R8_SNORM:
 	case DXGI_FORMAT_R8_UINT:
 	case DXGI_FORMAT_R8_SINT:
-		gnfImg.header.format = Gnf::Format::Format8;
+		gnfImg.header.format = Gnf::Ps4::Format::Format8;
 		if(meta.format == DXGI_FORMAT_R8_UNORM)
-			gnfImg.header.formatType = Gnf::FormatType::FormatTypeUNorm;
+			gnfImg.header.formatType = Gnf::Ps4::FormatType::FormatTypeUNorm;
 		else if (meta.format == DXGI_FORMAT_R8_SNORM)
-			gnfImg.header.formatType = Gnf::FormatType::FormatTypeSNorm;
+			gnfImg.header.formatType = Gnf::Ps4::FormatType::FormatTypeSNorm;
 		else if (meta.format == DXGI_FORMAT_R8_UINT)
-			gnfImg.header.formatType = Gnf::FormatType::FormatTypeUInt;
+			gnfImg.header.formatType = Gnf::Ps4::FormatType::FormatTypeUInt;
 		else if (meta.format == DXGI_FORMAT_R8_SINT)
-			gnfImg.header.formatType = Gnf::FormatType::FormatTypeSInt;
+			gnfImg.header.formatType = Gnf::Ps4::FormatType::FormatTypeSInt;
 	break;
 	default:
 		throw std::exception("Format not implemented!");
@@ -257,28 +257,28 @@ size_t ConvertDDSToGnf(const byte* ddssrc,const size_t &ddssize, byte*& gnfout)
 	gnfImg.header.mipmaps = meta.mipLevels - 1;
 	switch (gnfImg.header.format)
 	{
-	case Gnf::Format::FormatBC1:
-	case Gnf::Format::FormatBC2:
-	case Gnf::Format::FormatBC3:
-	case Gnf::Format::FormatBC7:
+	case Gnf::Ps4::Format::FormatBC1:
+	case Gnf::Ps4::Format::FormatBC2:
+	case Gnf::Ps4::Format::FormatBC3:
+	case Gnf::Ps4::Format::FormatBC7:
 		gnfImg.header.destX = 4;
 		gnfImg.header.destY = 5;
 		gnfImg.header.destZ = 6;
 		gnfImg.header.destW = 7;
 		break;
-	case Gnf::Format::FormatBC4:
+	case Gnf::Ps4::Format::FormatBC4:
 		gnfImg.header.destX = 4;
 		gnfImg.header.destY = 0;
 		gnfImg.header.destZ = 0;
 		gnfImg.header.destW = 1;
 		break;
-	case Gnf::Format::FormatBC5:
+	case Gnf::Ps4::Format::FormatBC5:
 		gnfImg.header.destX = 4;
 		gnfImg.header.destY = 5;
 		gnfImg.header.destZ = 0;
 		gnfImg.header.destW = 1;
 		break;
-	case Gnf::Format::FormatBC6:
+	case Gnf::Ps4::Format::FormatBC6:
 		gnfImg.header.destX = 4;
 		gnfImg.header.destY = 5;
 		gnfImg.header.destZ = 6;
@@ -286,7 +286,7 @@ size_t ConvertDDSToGnf(const byte* ddssrc,const size_t &ddssize, byte*& gnfout)
 		gnfImg.header.unk7 = 0xB6D;
 		gnfImg.header.unk9 = 0xA000;
 		break;
-	case Gnf::Format::Format8:
+	case Gnf::Ps4::Format::Format8:
 		gnfImg.header.destX = 4;
 		gnfImg.header.destY = 0;
 		gnfImg.header.destZ = 0;
@@ -301,18 +301,18 @@ size_t ConvertDDSToGnf(const byte* ddssrc,const size_t &ddssize, byte*& gnfout)
 	uint16_t pixbl = 4;
 	switch (gnfImg.header.format)
 	{
-	case Gnf::Format::FormatBC1:
-	case Gnf::Format::FormatBC4:
+	case Gnf::Ps4::Format::FormatBC1:
+	case Gnf::Ps4::Format::FormatBC4:
 		bpp = 4;
 		break;
-	case Gnf::Format::FormatBC2:
-	case Gnf::Format::FormatBC3:
-	case Gnf::Format::FormatBC5:
-	case Gnf::Format::FormatBC6:
-	case Gnf::Format::FormatBC7:
+	case Gnf::Ps4::Format::FormatBC2:
+	case Gnf::Ps4::Format::FormatBC3:
+	case Gnf::Ps4::Format::FormatBC5:
+	case Gnf::Ps4::Format::FormatBC6:
+	case Gnf::Ps4::Format::FormatBC7:
 		bpp = 8;
 		break;
-	case Gnf::Format::Format8:
+	case Gnf::Ps4::Format::Format8:
 		bpp = 8;
 		pixbl = 1;
 		break;
@@ -400,7 +400,7 @@ size_t ConvertDDSToGnf(const byte* ddssrc,const size_t &ddssize, byte*& gnfout)
 			off2 += scanLineSizePadded;
 		}
 
-		Gnf::GnfImage::Swizzle(tempData, gnfImg.imageData.get() + gnfoff, tempw, temph, bpp, pixbl);
+		Gnf::Ps4::GnfImage::Swizzle(tempData, gnfImg.imageData.get() + gnfoff, tempw, temph, bpp, pixbl);
 		gnfoff += size;
 		delete[] tempData;
 	}

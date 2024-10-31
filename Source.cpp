@@ -232,12 +232,12 @@ bool ImportAllGnf(const std::filesystem::path& gnfSrcDir, vector<Texpack*>& texp
         return false;
     }
 
-    std::vector<Gnf::GnfImage*> gnfImages;
+    std::vector<Gnf::Ps4::GnfImage*> gnfImages;
     std::vector<uint64_t> gnfHashes;
     std::filesystem::directory_iterator dir(gnfSrcDir);
     for (const std::filesystem::directory_entry& entry : dir)
     {
-        Gnf::GnfImage* gnfImage = new Gnf::GnfImage();
+        Gnf::Ps4::GnfImage* gnfImage = new Gnf::Ps4::GnfImage();
         if (Utils::str_tolower(entry.path().extension().string()) == ".gnf")
         {
             std::ifstream ifs(entry.path().string(), std::ios::binary | std::ios::in);
@@ -393,9 +393,9 @@ bool ImportAllGnf(const std::filesystem::path& gnfSrcDir, vector<Texpack*>& texp
 
         //                        switch (gnfImages[j]->header.format)
         //                        {
-        //                        case Gnf::Format::FormatBC1:
-        //                        case Gnf::Format::Format8:
-        //                        case Gnf::Format::FormatBC4:
+        //                        case Gnf::Ps4::Format::FormatBC1:
+        //                        case Gnf::Ps4::Format::Format8:
+        //                        case Gnf::Ps4::Format::FormatBC4:
         //                            byteptr = 0x3;
         //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
         //                            byteptr = 0xB;
@@ -406,11 +406,11 @@ bool ImportAllGnf(const std::filesystem::path& gnfSrcDir, vector<Texpack*>& texp
         //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
         //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
         //                            break;
-        //                        case Gnf::Format::FormatBC2:
-        //                        case Gnf::Format::FormatBC3:
-        //                        case Gnf::Format::FormatBC7:
-        //                        case Gnf::Format::FormatBC5:
-        //                        case Gnf::Format::FormatBC6:
+        //                        case Gnf::Ps4::Format::FormatBC2:
+        //                        case Gnf::Ps4::Format::FormatBC3:
+        //                        case Gnf::Ps4::Format::FormatBC7:
+        //                        case Gnf::Ps4::Format::FormatBC5:
+        //                        case Gnf::Ps4::Format::FormatBC6:
         //                            byteptr = 0x6;
         //                            wad.fs.write((char*)&byteptr, sizeof byteptr);
         //                            byteptr = 0x16;
@@ -470,7 +470,7 @@ bool ImportAllGnf(const std::filesystem::path& gnfSrcDir, vector<Texpack*>& texp
     size_t woff = _texSectionOff;
     for (size_t i = 0; i < _TexsCount; i++)
     {
-        Gnf::GnfImage*& gnfImg = gnfImages[i];
+        Gnf::Ps4::GnfImage*& gnfImg = gnfImages[i];
 
         for (size_t j = 0; j < texpacks.size(); j++)
         {
@@ -522,7 +522,7 @@ bool ImportAllGnf(const std::filesystem::path& gnfSrcDir, vector<Texpack*>& texp
     ofs1.close();
     for (size_t i = 0; i < _TexsCount; i++)
     {
-        Gnf::GnfImage*& gnfImg = gnfImages[i];
+        Gnf::Ps4::GnfImage*& gnfImg = gnfImages[i];
         uint32_t zz = 0x1U;
         ofs.write((char*)&zz, sizeof(zz));
         zz = 0x124U;
@@ -790,9 +790,9 @@ CommandLine Init()
     cmmdParse.AddCommand("settings", "Change Tool Settings.");
     cmmdParse.AddOption("settings", "-g", "Input path to GameDir", CommandLine::OptionType::SingleArg);
 
-    //cmmdParse.AddCommand("texpack", "Target a Texpack file for E/I.");
-    //cmmdParse.AddOption("texpack", "-e", "Export Textures from Texpack.");
-    //cmmdParse.AddOption("texpack", "-p", "Input path to .texpack file.", CommandLine::OptionType::MultiArgs);
+    cmmdParse.AddCommand("texpack", "Target a Texpack file for E/I.");
+    cmmdParse.AddOption("texpack", "-e", "Export Textures from Texpack.");
+    cmmdParse.AddOption("texpack", "-p", "Input path to .texpack file.", CommandLine::OptionType::MultiArgs);
 
 
     return cmmdParse;
@@ -856,7 +856,7 @@ int main(int argc, char* argv[])
 
     //directory_iterator dir(R"(D:\Game\God of War Ragnarok\exec\wad\pc_le)");
 
-    //std::set<std::tuple<Gnf::Format, Gnf::FormatType>> types;
+    //std::set<std::tuple<int, int>> types;
     //for (auto& itr : dir)
     //{
     //    if (itr.path().extension().string() == ".texpack")
@@ -865,6 +865,7 @@ int main(int argc, char* argv[])
     //        pack.SurveyFormats(types);
     //    }
     //}
+    //return 0;
 
     CHAR charbuffer[260] = { 0 };
     GetCurrentDirectoryA(sizeof(charbuffer), charbuffer);
@@ -977,7 +978,7 @@ int main(int argc, char* argv[])
                 }
                 if (cmmd._options["-t"].active)
                 {
-                    if (ExportAllTextures(wad, texpacks, outDir, true))
+                    if (ExportAllTextures(wad, texpacks, outDir, false))
                     {
                         string msg = "Successfully exported textures to: " + outDir.string() + "\n";
                         Utils::Logger::Success(msg.c_str());

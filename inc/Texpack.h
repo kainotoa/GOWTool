@@ -44,6 +44,6 @@ public:
 	bool ExportGnf(const std::filesystem::path& dir,const uint64_t& hash,std::string name = "",bool dds = false);
 	bool ExportAllGnf(const std::filesystem::path& dir,bool dds = false);
 	bool GetUserHash(const uint64_t& hash, uint64_t& outUserHash);
-	bool SurveyFormats(std::set<std::tuple<Gnf::Format, Gnf::FormatType>> &types);
+	bool SurveyFormats(std::set<std::tuple<int, int>> &types);
 	~Texpack();
 };

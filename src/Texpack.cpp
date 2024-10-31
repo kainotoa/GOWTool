@@ -130,7 +130,7 @@ bool Texpack::ExportGnf(byte*& output, const uint64_t& hash, uint32_t& expSize)
 	return true;
 }
 
-bool Texpack::SurveyFormats(std::set<std::tuple<Gnf::Format, Gnf::FormatType>> &types)
+bool Texpack::SurveyFormats(std::set<std::tuple<int, int>> &types)
 {
 	for (uint32_t i = 0; i < _TexsCount; i++)
 	{ 
@@ -159,7 +159,7 @@ bool Texpack::SurveyFormats(std::set<std::tuple<Gnf::Format, Gnf::FormatType>> &
 				}
 			}
 		}
-		Gnf::Header hdr;
+		Gnf::Ps5::Header hdr;
 
 		size_t ooof = (size_t(texblockInfos[0]->_blockOff) << 4) + 4;
 		fs.seekg(ooof, std::ios::beg);
@@ -170,14 +170,14 @@ bool Texpack::SurveyFormats(std::set<std::tuple<Gnf::Format, Gnf::FormatType>> &
 		fs.seekg(4, std::ios::cur);
 		if (off != 0x20)
 		{
-			fs.read((char*)&hdr, 0x100);
+			fs.read((char*)&hdr, sizeof(hdr));
 		}
 		size_t s = types.size();
-		types.insert(std::make_tuple<Gnf::Format, Gnf::FormatType>(hdr.format, hdr.formatType));
+		types.insert(std::make_tuple<int, int>(hdr.format, hdr.swizzle));
 		if (types.size() > s)
 		{
 			ExportGnf(R"(D:\gowr\New folder)", texInfo->_fileHash, std::to_string(texInfo->_fileHash), false);
-			cout << texInfo->_fileHash << " " << hdr.width << " " << hdr.height << " " << (int)hdr.format << " " << (int)hdr.formatType << "\n";
+			cout << texInfo->_fileHash << " " << hdr.width() << " " << hdr.height << " " << hdr.format << " " << hdr.swizzle << "\n";
 		}
 	}
 	return true;
